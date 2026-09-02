@@ -4,7 +4,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
   View,
 } from 'react-native';
 
@@ -19,7 +18,6 @@ import {
   getPasswordChecks,
   isPasswordValid,
 } from '@/lib/password-validation';
-import { Spacing } from '@/constants/theme';
 
 export default function SignUpScreen() {
   const [email, setEmail] = useState('');
@@ -85,16 +83,16 @@ export default function SignUpScreen() {
       footer={<Button disabled={!canContinue} label="Continue" loading={loading} onPress={handleContinue} />}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.flex}>
+        className="flex-1">
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerClassName="flex-grow gap-4 pt-2 pb-6"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
-          <ThemedText type="heading" style={styles.title}>
+          <ThemedText type="heading" className="text-left">
             Create Your Account
           </ThemedText>
 
-          <View style={styles.form}>
+          <View className="gap-4">
             <TextField
               autoCapitalize="none"
               autoComplete="email"
@@ -148,21 +146,3 @@ export default function SignUpScreen() {
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'left',
-  },
-  form: {
-    gap: Spacing.three,
-  },
-});

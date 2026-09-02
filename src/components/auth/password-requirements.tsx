@@ -1,37 +1,35 @@
-import { SymbolView } from 'expo-symbols';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { CheckmarkIcon } from '@/components/ui/checkmark-icon';
 import { PASSWORD_RULES, type PasswordChecks } from '@/lib/password-validation';
-import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { cn } from '@/lib/cn';
 
 type PasswordRequirementsProps = {
   checks: PasswordChecks;
+  className?: string;
 };
 
-export function PasswordRequirements({ checks }: PasswordRequirementsProps) {
-  const theme = useTheme();
-
+export function PasswordRequirements({ checks, className }: PasswordRequirementsProps) {
   return (
-    <View style={styles.container}>
-      <ThemedText type="body" themeColor="textMuted" style={styles.title}>
+    <View className={cn('gap-2', className)}>
+      <ThemedText type="body" themeColor="textMuted" className="text-[15px] leading-[22px]">
         Your password must contain:
       </ThemedText>
 
-      <View style={styles.list}>
+      <View className="gap-2">
         {PASSWORD_RULES.map((rule) => {
           const passed = checks[rule.id];
-          const color = passed ? theme.success : theme.error;
 
           return (
-            <View key={rule.id} style={styles.item}>
-              <SymbolView
-                name={passed ? 'checkmark.circle.fill' : 'xmark.circle.fill'}
-                size={18}
-                tintColor={color}
-              />
-              <ThemedText type="body" style={[styles.label, { color }]}>
+            <View key={rule.id} className="flex-row items-center gap-2">
+              <CheckmarkIcon passed={passed} />
+              <ThemedText
+                type="body"
+                className={cn(
+                  'flex-1 text-[15px] leading-[22px]',
+                  passed ? 'text-success' : 'text-error',
+                )}>
                 {rule.label}
               </ThemedText>
             </View>
@@ -41,26 +39,3 @@ export function PasswordRequirements({ checks }: PasswordRequirementsProps) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    gap: Spacing.two,
-  },
-  title: {
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  list: {
-    gap: Spacing.two,
-  },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-  },
-  label: {
-    flex: 1,
-    fontSize: 15,
-    lineHeight: 22,
-  },
-});

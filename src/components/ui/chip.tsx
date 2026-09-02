@@ -1,55 +1,34 @@
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Fonts, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { cn } from '@/lib/cn';
 
 type ChipProps = {
   label: string;
   onPress: () => void;
   selected: boolean;
+  className?: string;
 };
 
-export function Chip({ label, selected, onPress }: ChipProps) {
-  const theme = useTheme();
-
+export function Chip({ label, selected, onPress, className }: ChipProps) {
   return (
     <Pressable
       accessibilityRole="checkbox"
       accessibilityState={{ selected }}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.chip,
-        {
-          backgroundColor: selected ? theme.buttonPrimary : theme.background,
-          borderColor: selected ? theme.buttonPrimary : theme.text,
-        },
-        pressed && styles.pressed,
-      ]}>
+      className={cn(
+        'border rounded-full py-2.5 px-4',
+        selected ? 'bg-foreground border-foreground' : 'bg-background border-foreground',
+        className,
+      )}
+      style={({ pressed }) => [pressed && { opacity: 0.85 }]}>
       <ThemedText
-        style={[
-          styles.label,
-          { color: selected ? theme.buttonPrimaryText : theme.text },
-        ]}>
+        className={cn(
+          'font-geist-medium text-[15px] leading-5',
+          selected ? 'text-btn-primary-text' : 'text-foreground',
+        )}>
         {label}
       </ThemedText>
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  chip: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingVertical: Spacing.two + 2,
-    paddingHorizontal: Spacing.three,
-  },
-  label: {
-    fontFamily: Fonts.medium,
-    fontSize: 15,
-    lineHeight: 20,
-  },
-  pressed: {
-    opacity: 0.85,
-  },
-});

@@ -1,98 +1,63 @@
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { router, type Href } from 'expo-router';
+import { ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-import * as Device from 'expo-device';
-
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+import { AccountBalanceCarousel } from '@/components/home/account-balance-card';
+import { ExploreSection } from '@/components/home/explore-section';
+import { HomeHeader } from '@/components/home/home-header';
+import { RecentActivities } from '@/components/home/recent-activities';
+import { SetupBanner } from '@/components/home/setup-banner';
+import { HOME_ACCOUNTS, RECENT_ACTIVITIES } from '@/constants/home-data';
+import { BottomTabInset } from '@/constants/theme';
+import { getSignupFirstName, getSignupInitials } from '@/lib/mock-auth';
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
+  const firstName = getSignupFirstName() || 'Ayomide';
+  const initials = getSignupInitials();
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/(tabs)/home.tsx</ThemedText>}
+    <View className="flex-1 bg-white">
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="gap-5"
+        contentContainerStyle={{
+          paddingTop: insets.top + 8,
+          paddingBottom: BottomTabInset + 16,
+        }}
+        showsVerticalScrollIndicator={false}>
+        <View className="px-5">
+          <HomeHeader
+            firstName={firstName}
+            initials={initials}
+            onNotificationsPress={() => router.push('/notifications')}
+            onProfilePress={() => router.push('/profile' as Href)}
           />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
+        </View>
 
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+        <AccountBalanceCarousel accounts={HOME_ACCOUNTS} />
+
+        <View className="gap-5 px-5">
+          <SetupBanner
+            onActionPress={(slideId) => {
+              if (slideId === 'kyc') {
+                router.push('/kyc' as Href);
+              }
+            }}
+          />
+          <ExploreSection
+            onItemPress={(id) => {
+              if (id === 'signals') {
+                router.push('/signals' as Href);
+              }
+              if (id === 'classes') {
+                router.push('/trading-classes' as Href);
+              }
+            }}
+          />
+          <RecentActivities activities={RECENT_ACTIVITIES} />
+        </View>
+      </ScrollView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
-});

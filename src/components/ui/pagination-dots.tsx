@@ -1,39 +1,25 @@
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
+
+import { cn } from '@/lib/cn';
 
 type PaginationDotsProps = {
   activeIndex: number;
   total?: number;
+  className?: string;
 };
 
-export function PaginationDots({ activeIndex, total = 3 }: PaginationDotsProps) {
+export function PaginationDots({ activeIndex, total = 3, className }: PaginationDotsProps) {
   return (
-    <View style={styles.container}>
+    <View className={cn('flex-row items-center justify-center gap-2', className)}>
       {Array.from({ length: total }).map((_, index) => (
         <View
           key={index}
-          style={[styles.dot, index === activeIndex ? styles.dotActive : styles.dotInactive]}
+          className={cn(
+            'w-2 h-2 rounded-full',
+            index === activeIndex ? 'bg-background' : 'bg-[#3F3F46]',
+          )}
         />
       ))}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  dotActive: {
-    backgroundColor: '#FFFFFF',
-  },
-  dotInactive: {
-    backgroundColor: '#3F3F46',
-  },
-});

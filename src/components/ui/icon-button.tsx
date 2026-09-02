@@ -1,46 +1,34 @@
 import { SymbolView } from 'expo-symbols';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable } from 'react-native';
 
-import { useTheme } from '@/hooks/use-theme';
+import { cn } from '@/lib/cn';
 
 type IconButtonProps = {
   onPress: () => void;
   accessibilityLabel: string;
   icon: 'back' | 'help';
+  className?: string;
 };
 
-export function IconButton({ onPress, accessibilityLabel, icon }: IconButtonProps) {
-  const theme = useTheme();
-
+export function IconButton({ onPress, accessibilityLabel, icon, className }: IconButtonProps) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       hitSlop={12}
       onPress={onPress}
-      style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
+      className={cn('w-10 h-10 items-center justify-center', className)}
+      style={({ pressed }) => [pressed && { opacity: 0.6 }]}>
       {icon === 'back' ? (
-        <SymbolView name="chevron.left" size={22} tintColor={theme.icon} weight="medium" />
+        <SymbolView name="chevron.left" size={22} tintColor="#000000" weight="medium" />
       ) : (
         <SymbolView
           name="questionmark.circle"
           size={24}
-          tintColor={theme.icon}
+          tintColor="#000000"
           weight="regular"
         />
       )}
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  button: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pressed: {
-    opacity: 0.6,
-  },
-});

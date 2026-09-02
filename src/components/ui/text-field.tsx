@@ -1,17 +1,11 @@
 import { useState } from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  TextInput,
-  View,
-  type TextInputProps,
-} from 'react-native';
+import { Pressable, TextInput, View, type TextInputProps } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
 import { ThemedText } from '@/components/themed-text';
-import { getFieldBorderColor, type FieldBorderState } from '@/components/ui/field-border';
-import { Fonts, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import type { FieldBorderState } from '@/constants/theme';
+import { cn } from '@/lib/cn';
+import { getFieldBorderClass } from '@/lib/field-border';
 
 type TextFieldProps = TextInputProps & {
   borderState?: FieldBorderState;
@@ -47,12 +41,12 @@ export function TextField({
   secureToggle,
   secureTextEntry,
   value,
+  className,
   style,
   onFocus,
   onBlur,
   ...rest
-}: TextFieldProps) {
-  const theme = useTheme();
+}: TextFieldProps & { className?: string }) {
   const [focused, setFocused] = useState(false);
   const [hidden, setHidden] = useState(secureTextEntry ?? false);
   const hasError = !!errorMessage;
@@ -61,26 +55,24 @@ export function TextField({
   const showSecureToggle = secureToggle && !!value;
 
   return (
-    <View style={styles.wrapper}>
+    <View className={cn('gap-1.5', className)}>
       <View
-        style={[
-          styles.container,
-          {
-            backgroundColor: theme.inputBackground,
-            borderColor: getFieldBorderColor(resolvedBorderState, theme),
-          },
-        ]}>
+        className={cn(
+          'border bg-input rounded-field px-4 pt-2 pb-2.5 gap-0.5',
+          getFieldBorderClass(resolvedBorderState),
+        )}>
         <ThemedText type="fieldLabel" themeColor="textMuted">
           {label}
         </ThemedText>
 
-        <View style={styles.inputRow}>
+        <View className="flex-row items-center min-h-[24px]">
           <TextInput
             {...rest}
             secureTextEntry={hidden}
             value={value}
-            placeholderTextColor={theme.textMuted}
-            style={[styles.input, { color: theme.text }, style]}
+            placeholderTextColor="#6B7280"
+            className="flex-1 p-0 text-foreground font-geist text-base"
+            style={[{ fontSize: 16, lineHeight: undefined, paddingVertical: 0 }, style]}
             onBlur={(event) => {
               setFocused(false);
               onBlur?.(event);
@@ -97,8 +89,11 @@ export function TextField({
               accessibilityLabel={`Clear ${label}`}
               hitSlop={8}
               onPress={onClear}
-              style={styles.iconButton}>
-              <ThemedText type="fieldLabel" themeColor="iconMuted" style={styles.clearIcon}>
+              className="w-7 h-7 items-center justify-center ml-1">
+              <ThemedText
+                type="fieldLabel"
+                themeColor="iconMuted"
+                className="text-lg leading-5">
                 ×
               </ThemedText>
             </Pressable>
@@ -110,11 +105,11 @@ export function TextField({
               accessibilityLabel={hidden ? 'Show password' : 'Hide password'}
               hitSlop={8}
               onPress={() => setHidden((current) => !current)}
-              style={styles.iconButton}>
+              className="w-7 h-7 items-center justify-center ml-1">
               <SymbolView
                 name={hidden ? 'eye' : 'eye.slash'}
                 size={20}
-                tintColor={theme.iconMuted}
+                tintColor="#6B7280"
                 weight="regular"
               />
             </Pressable>
@@ -130,39 +125,3 @@ export function TextField({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrapper: {
-    gap: Spacing.one + 2,
-  },
-  container: {
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: Spacing.three,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.two + 2,
-    gap: 2,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  input: {
-    flex: 1,
-    fontFamily: Fonts.regular,
-    fontSize: 16,
-    lineHeight: 22,
-    padding: 0,
-  },
-  iconButton: {
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: Spacing.one,
-  },
-  clearIcon: {
-    fontSize: 18,
-    lineHeight: 20,
-  },
-});

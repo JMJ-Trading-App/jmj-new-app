@@ -1,13 +1,12 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/chip';
 import { Screen } from '@/components/ui/screen';
 import { SelectionCard } from '@/components/ui/selection-card';
-import { Fonts, Spacing } from '@/constants/theme';
 import { submitPreferences } from '@/lib/mock-auth';
 
 const TRADING_EXPERIENCE_OPTIONS = [
@@ -28,7 +27,9 @@ type Interest = (typeof INTEREST_OPTIONS)[number]['id'];
 
 export default function PreferencesScreen() {
   const [experience, setExperience] = useState<TradingExperience>('new');
-  const [interests, setInterests] = useState<Interest[]>(['account-management']);
+  const [interests, setInterests] = useState<Interest[]>([
+    'account-management',
+  ]);
   const [loading, setLoading] = useState(false);
 
   const canContinue = useMemo(() => interests.length > 0, [interests.length]);
@@ -68,12 +69,14 @@ export default function PreferencesScreen() {
         />
       }>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerClassName="flex-grow gap-8 pt-2 pb-6"
         showsVerticalScrollIndicator={false}>
-        <View style={styles.section}>
-          <ThemedText style={styles.sectionTitle}>Your trading experience</ThemedText>
+        <View className="gap-4">
+          <ThemedText className="mb-[23px] mt-[15px] font-geist-semibold text-2xl">
+            Your trading experience
+          </ThemedText>
 
-          <View style={styles.options}>
+          <View className="gap-2">
             {TRADING_EXPERIENCE_OPTIONS.map((option) => (
               <SelectionCard
                 key={option.id}
@@ -85,10 +88,12 @@ export default function PreferencesScreen() {
           </View>
         </View>
 
-        <View style={styles.section}>
-          <ThemedText style={styles.sectionTitle}>What are you interested in?</ThemedText>
+        <View className="gap-4">
+          <ThemedText className="mb-[23px] mt-[15px] font-geist-semibold text-2xl">
+            What are you interested in?
+          </ThemedText>
 
-          <View style={styles.chips}>
+          <View className="flex-row flex-wrap gap-2">
             {INTEREST_OPTIONS.map((option) => (
               <Chip
                 key={option.id}
@@ -103,28 +108,3 @@ export default function PreferencesScreen() {
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  scrollContent: {
-    flexGrow: 1,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.four,
-    gap: Spacing.five,
-  },
-  section: {
-    gap: Spacing.three,
-  },
-  sectionTitle: {
-    fontFamily: Fonts.bold,
-    fontSize: 18,
-    lineHeight: 24,
-  },
-  options: {
-    gap: Spacing.two,
-  },
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-});

@@ -1,70 +1,74 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { getFieldBorderColor, type FieldBorderState } from '@/components/ui/field-border';
+import { CountryFlagIcon, type CountryFlagCode } from '@/components/ui/country-flag-icon';
+import type { FieldBorderState } from '@/constants/theme';
+import { cn } from '@/lib/cn';
+import { getFieldBorderClass } from '@/lib/field-border';
 import { formatPhoneNumber } from '@/lib/password-validation';
-import { Fonts, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
 
 type PhoneFieldProps = {
   borderState?: FieldBorderState;
+  country?: CountryFlagCode;
   countryCode?: string;
-  countryFlag?: string;
   label?: string;
   onChangeText: (value: string) => void;
   onCountryPress?: () => void;
   value: string;
+  className?: string;
 };
 
 export function PhoneField({
   borderState,
+  country = 'ng',
   countryCode = '+234',
-  countryFlag = '🇳🇬',
   label = 'Mobile Number',
   onChangeText,
   onCountryPress,
   value,
+  className,
 }: PhoneFieldProps) {
-  const theme = useTheme();
   const [focused, setFocused] = useState(false);
   const resolvedBorderState = borderState ?? (focused ? 'focused' : 'default');
+  const borderClass = getFieldBorderClass(focused ? 'focused' : resolvedBorderState);
 
   return (
     <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: theme.inputBackground,
-          borderColor: getFieldBorderColor(focused ? 'focused' : resolvedBorderState, theme),
-        },
-      ]}>
-      <View style={styles.countrySection}>
+      className={cn(
+        'flex-row items-stretch border bg-input rounded-field',
+        borderClass,
+        className,
+      )}>
+      <View className="justify-center px-4">
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Select country code"
           onPress={onCountryPress}
-          style={styles.countryButton}>
-          <ThemedText style={styles.flag}>{countryFlag}</ThemedText>
-          <ThemedText type="fieldLabel" themeColor="textMuted" style={styles.chevron}>
+          className="flex-row items-center gap-1">
+          <CountryFlagIcon code={country} size={24} />
+          <ThemedText type="fieldLabel" themeColor="textMuted" className="text-xs leading-[14px]">
             ▾
           </ThemedText>
         </Pressable>
       </View>
 
-      <View style={[styles.divider, { backgroundColor: theme.border }]} />
+      <View className="w-px my-2 bg-border" />
 
-      <View style={styles.inputSection}>
+      <View className="flex-1 px-4 pt-2 pb-2.5 gap-0.5">
         <ThemedText type="fieldLabel" themeColor="textMuted">
           {label}
         </ThemedText>
-        <View style={styles.inputRow}>
-          <ThemedText style={[styles.prefix, { color: theme.text }]}>{countryCode}</ThemedText>
+        <View className="flex-row items-center gap-1 min-h-[24px]">
+          <ThemedText className="font-geist text-base text-foreground">
+            {countryCode}
+          </ThemedText>
           <TextInput
             keyboardType="phone-pad"
             placeholder=""
-            placeholderTextColor={theme.textMuted}
-            style={[styles.input, { color: theme.text }]}
+            placeholderTextColor="#6B7280"
+            className="flex-1 p-0 text-foreground font-geist text-base"
+            style={{ fontSize: 16, paddingVertical: 0 }}
             value={value}
             onBlur={() => setFocused(false)}
             onChangeText={(text) => onChangeText(formatPhoneNumber(text))}
@@ -75,58 +79,3 @@ export function PhoneField({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    borderWidth: 1,
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  countrySection: {
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.three,
-  },
-  countryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-  },
-  flag: {
-    fontSize: 22,
-    lineHeight: 26,
-  },
-  chevron: {
-    fontSize: 12,
-    lineHeight: 14,
-  },
-  divider: {
-    width: 1,
-    marginVertical: Spacing.two,
-  },
-  inputSection: {
-    flex: 1,
-    paddingHorizontal: Spacing.three,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.two + 2,
-    gap: 2,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-  },
-  prefix: {
-    fontFamily: Fonts.regular,
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  input: {
-    flex: 1,
-    fontFamily: Fonts.regular,
-    fontSize: 16,
-    lineHeight: 22,
-    padding: 0,
-  },
-});

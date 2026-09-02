@@ -1,11 +1,10 @@
-import { Image } from 'expo-image';
-import { router } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { router, type Href } from 'expo-router';
+import { Pressable, View } from 'react-native';
 
+import { SuccessBadge } from '@/components/onboarding/success-badge';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
-import { Fonts, Spacing } from '@/constants/theme';
 import { getSignupFirstName } from '@/lib/mock-auth';
 
 export default function OnboardingCompleteScreen() {
@@ -13,86 +12,38 @@ export default function OnboardingCompleteScreen() {
 
   return (
     <Screen
+      hideHeader
       showBackButton={false}
       footer={
-        <View style={styles.footer}>
+        <View className="gap-4">
           <Button label="Continue" onPress={() => router.replace('/(tabs)/home')} />
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => {
-              // KYC flow will be connected later.
-            }}>
-            <ThemedText style={styles.kycLink}>Complete KYC now</ThemedText>
+          <Pressable accessibilityRole="button" onPress={() => router.push('/kyc' as Href)}>
+            <ThemedText className="text-center font-geist-semibold text-base leading-[22px] text-stone-title">
+              Complete KYC now
+            </ThemedText>
           </Pressable>
         </View>
       }>
-      <View style={styles.content}>
-        <Image
-          source={require('@/assets/images/onboarding/success-badge.png')}
-          style={styles.badge}
-          contentFit="contain"
-        />
+      <View className="flex-1 pt-8">
+        <View className="max-w-[320px] items-center gap-4 self-center">
+          <SuccessBadge />
 
-        <View style={styles.textBlock}>
-          <ThemedText type="heading" style={styles.title}>
+          <ThemedText className="text-center font-geist-semibold text-[22px] leading-[30px] text-stone-title">
             You&apos;re all set, {firstName}!
           </ThemedText>
 
-          <ThemedText type="body" themeColor="textMuted" style={styles.description}>
+          <ThemedText className="text-center font-geist-medium text-[15px] leading-6 text-stone-body">
             Your account is ready. Complete KYC anytime to unlock funding, withdrawals and pool
             investing.
           </ThemedText>
 
-          <View style={styles.statusBadge}>
-            <ThemedText style={styles.statusText}>KYC pending</ThemedText>
+          <View className="mt-1 rounded-[37px] bg-kyc-badge px-4 py-1.5">
+            <ThemedText className="font-geist-medium text-[13px] text-stone-title">
+              KYC pending
+            </ThemedText>
           </View>
         </View>
       </View>
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    alignItems: 'center',
-    paddingTop: Spacing.six,
-  },
-  badge: {
-    width: 120,
-    height: 120,
-    marginBottom: Spacing.five,
-  },
-  textBlock: {
-    alignItems: 'center',
-    gap: Spacing.three,
-    maxWidth: 320,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  description: {
-    textAlign: 'center',
-  },
-  statusBadge: {
-    backgroundColor: '#FFF4C2',
-    borderRadius: 999,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.one + 2,
-  },
-  statusText: {
-    fontFamily: Fonts.medium,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  footer: {
-    gap: Spacing.three,
-    alignItems: 'center',
-  },
-  kycLink: {
-    fontFamily: Fonts.semiBold,
-    fontSize: 16,
-    lineHeight: 22,
-    textAlign: 'center',
-  },
-});

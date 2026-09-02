@@ -1,9 +1,10 @@
-import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
+import { Platform, Text, type TextProps } from 'react-native';
 
-import { Fonts, ThemeColor } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import type { ThemeColor } from '@/constants/theme';
+import { cn } from '@/lib/cn';
 
 export type ThemedTextProps = TextProps & {
+  className?: string;
   type?:
     | 'default'
     | 'title'
@@ -22,102 +23,61 @@ export type ThemedTextProps = TextProps & {
   themeColor?: ThemeColor;
 };
 
-export function ThemedText({ style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
-  const theme = useTheme();
+const typeClasses: Record<NonNullable<ThemedTextProps['type']>, string> = {
+  small: 'font-geist-medium text-sm leading-5',
+  smallBold: 'font-geist-bold text-sm leading-5',
+  default: 'font-geist-medium text-base leading-6',
+  title: 'font-geist-semibold text-[48px] leading-[52px]',
+  heading: 'font-geist-bold text-2xl text-foreground',
+  body: 'font-geist text-base leading-6',
+  button: 'font-geist-semibold text-base leading-[22px]',
+  otpDigit: 'font-geist-medium text-2xl leading-[30px]',
+  fieldLabel: 'font-geist text-[13px] leading-[18px]',
+  fieldError: 'font-geist text-sm leading-5',
+  subtitle: 'font-geist-semibold text-[32px] leading-[44px]',
+  link: 'font-geist text-sm leading-[30px]',
+  linkPrimary: 'font-geist text-sm leading-[30px] text-link',
+  code: Platform.select({
+    android: 'font-geist-mono-bold text-xs',
+    default: 'font-geist-mono text-xs',
+  })!,
+};
 
+const colorClasses: Record<ThemeColor, string> = {
+  text: 'text-foreground',
+  textSecondary: 'text-secondary',
+  textMuted: 'text-muted',
+  background: 'text-background',
+  border: 'text-border',
+  borderFocused: 'text-border-focused',
+  borderSuccess: 'text-border-success',
+  borderError: 'text-border-error',
+  inputBackground: 'text-input',
+  buttonPrimary: 'text-foreground',
+  buttonPrimaryDisabled: 'text-btn-disabled',
+  buttonSecondary: 'text-btn-secondary',
+  buttonPrimaryText: 'text-btn-primary-text',
+  buttonSecondaryText: 'text-foreground',
+  icon: 'text-foreground',
+  iconMuted: 'text-icon-muted',
+  success: 'text-success',
+  error: 'text-error',
+  linkPrimary: 'text-link',
+  backgroundElement: 'text-background-element',
+};
+
+export function ThemedText({
+  className,
+  type = 'default',
+  themeColor = 'text',
+  style,
+  ...rest
+}: ThemedTextProps) {
   return (
     <Text
-      style={[
-        { color: theme[themeColor ?? 'text'] },
-        type === 'default' && styles.default,
-        type === 'title' && styles.title,
-        type === 'heading' && styles.heading,
-        type === 'body' && styles.body,
-        type === 'button' && styles.button,
-        type === 'fieldLabel' && styles.fieldLabel,
-        type === 'fieldError' && styles.fieldError,
-        type === 'otpDigit' && styles.otpDigit,
-        type === 'small' && styles.small,
-        type === 'smallBold' && styles.smallBold,
-        type === 'subtitle' && styles.subtitle,
-        type === 'link' && styles.link,
-        type === 'linkPrimary' && [styles.linkPrimary, { color: theme.linkPrimary }],
-        type === 'code' && styles.code,
-        style,
-      ]}
+      className={cn(typeClasses[type], colorClasses[themeColor], className)}
+      style={style}
       {...rest}
     />
   );
 }
-
-const styles = StyleSheet.create({
-  small: {
-    fontFamily: Fonts.medium,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  smallBold: {
-    fontFamily: Fonts.bold,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  default: {
-    fontFamily: Fonts.medium,
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  title: {
-    fontFamily: Fonts.semiBold,
-    fontSize: 48,
-    lineHeight: 52,
-  },
-  heading: {
-    fontFamily: Fonts.bold,
-    fontSize: 28,
-    lineHeight: 36,
-  },
-  body: {
-    fontFamily: Fonts.regular,
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  button: {
-    fontFamily: Fonts.semiBold,
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  otpDigit: {
-    fontFamily: Fonts.medium,
-    fontSize: 24,
-    lineHeight: 30,
-  },
-  fieldLabel: {
-    fontFamily: Fonts.regular,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  fieldError: {
-    fontFamily: Fonts.regular,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  subtitle: {
-    fontFamily: Fonts.semiBold,
-    fontSize: 32,
-    lineHeight: 44,
-  },
-  link: {
-    fontFamily: Fonts.regular,
-    lineHeight: 30,
-    fontSize: 14,
-  },
-  linkPrimary: {
-    fontFamily: Fonts.regular,
-    lineHeight: 30,
-    fontSize: 14,
-  },
-  code: {
-    fontFamily: Platform.select({ android: Fonts.monoBold }) ?? Fonts.monoMedium,
-    fontSize: 12,
-  },
-});

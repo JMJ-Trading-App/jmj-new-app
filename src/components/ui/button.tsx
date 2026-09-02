@@ -1,7 +1,6 @@
 import {
   ActivityIndicator,
   Pressable,
-  StyleSheet,
   View,
   type PressableProps,
   type StyleProp,
@@ -9,8 +8,7 @@ import {
 } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { cn } from '@/lib/cn';
 
 type ButtonProps = PressableProps & {
   label: string;
@@ -25,75 +23,47 @@ export function Button({
   variant = 'primary',
   style,
   disabled,
+  className,
   ...rest
-}: ButtonProps) {
-  const theme = useTheme();
+}: ButtonProps & { className?: string }) {
   const isDisabled = disabled || loading;
 
-  const backgroundColor =
+  const backgroundClass =
     variant === 'inverse'
-      ? '#FFFFFF'
+      ? 'bg-background'
       : variant === 'primary'
         ? disabled && !loading
-          ? theme.buttonPrimaryDisabled
-          : theme.buttonPrimary
-        : theme.buttonSecondary;
+          ? 'bg-btn-disabled'
+          : 'bg-foreground'
+        : 'bg-btn-secondary';
 
-  const labelColor =
-    variant === 'inverse'
-      ? '#000000'
-      : variant === 'primary'
-        ? theme.buttonPrimaryText
-        : theme.buttonSecondaryText;
+  const labelClass =
+    variant === 'inverse' || variant === 'secondary'
+      ? 'text-foreground'
+      : 'text-btn-primary-text';
+
+  const spinnerColor = variant === 'primary' && !(disabled && !loading) ? '#FFFFFF' : '#000000';
 
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled: disabled || loading, busy: loading }}
       disabled={isDisabled}
-      style={({ pressed }) => [
-        styles.base,
-        { backgroundColor },
-        pressed && !isDisabled && styles.pressed,
-        disabled && !loading && styles.disabled,
-        style,
-      ]}
+      className={cn(
+        'items-center justify-center rounded-[14px] py-[18px] px-6',
+        backgroundClass,
+        className,
+      )}
+      style={({ pressed }) => [pressed && !isDisabled && { opacity: 0.85 }, style]}
       {...rest}>
-      <View style={styles.content}>
-        <ThemedText type="button" style={[styles.label, { color: labelColor }]}>
+      <View className="flex-row items-center justify-center">
+        <ThemedText type="button" className={cn('text-center', labelClass)}>
           {label}
         </ThemedText>
         {loading ? (
-          <ActivityIndicator color={labelColor} size="small" style={styles.spinner} />
+          <ActivityIndicator color={spinnerColor} size="small" style={{ marginLeft: 8 }} />
         ) : null}
       </View>
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  base: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 14,
-    paddingVertical: Spacing.three + 2,
-    paddingHorizontal: Spacing.four,
-  },
-  content: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pressed: {
-    opacity: 0.85,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  label: {
-    textAlign: 'center',
-  },
-  spinner: {
-    marginLeft: Spacing.two,
-  },
-});

@@ -4,32 +4,29 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
   View,
 } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
+import { DateOfBirthField } from '@/components/ui/date-of-birth-field';
 import { Screen } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
-import { formatDateOfBirth, isCompleteDateOfBirth } from '@/lib/date-of-birth';
+import { isCompleteDateOfBirth } from '@/lib/date-of-birth';
 import { submitIdentity } from '@/lib/mock-auth';
-import { Spacing } from '@/constants/theme';
 
 export default function IdentityScreen() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const canContinue = useMemo(
     () =>
       firstName.trim().length > 0 &&
       lastName.trim().length > 0 &&
-      isCompleteDateOfBirth(dateOfBirth) &&
-      confirmPassword.length > 0,
-    [confirmPassword, dateOfBirth, firstName, lastName],
+      isCompleteDateOfBirth(dateOfBirth),
+    [dateOfBirth, firstName, lastName],
   );
 
   async function handleContinue() {
@@ -42,7 +39,6 @@ export default function IdentityScreen() {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       dateOfBirth,
-      confirmPassword,
     });
     setLoading(false);
     router.push('/auth/preferences');
@@ -56,22 +52,27 @@ export default function IdentityScreen() {
         // Help flow will be connected later.
       }}
       footer={
-        <Button disabled={!canContinue} label="Continue" loading={loading} onPress={handleContinue} />
+        <Button
+          disabled={!canContinue}
+          label="Continue"
+          loading={loading}
+          onPress={handleContinue}
+        />
       }>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.flex}>
+        className="flex-1">
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerClassName="flex-grow gap-8 pt-2 pb-6"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
-          <ThemedText type="heading" style={styles.title}>
+          <ThemedText type="heading" className="text-left">
             Your Identity
           </ThemedText>
 
-          <View style={styles.form}>
-            <View style={styles.nameRow}>
-              <View style={styles.nameField}>
+          <View className="gap-4">
+            <View className="flex-row gap-2">
+              <View className="flex-1">
                 <TextField
                   autoComplete="given-name"
                   borderState={firstName ? 'filled' : 'default'}
@@ -82,7 +83,7 @@ export default function IdentityScreen() {
                 />
               </View>
 
-              <View style={styles.nameField}>
+              <View className="flex-1">
                 <TextField
                   autoComplete="family-name"
                   borderState={lastName ? 'filled' : 'default'}
@@ -94,55 +95,17 @@ export default function IdentityScreen() {
               </View>
             </View>
 
-            <TextField
+            <DateOfBirthField
               borderState={dateOfBirth ? 'success' : 'default'}
-              keyboardType="number-pad"
-              label="Date of Birth"
-              secureTextEntry
-              secureToggle
-              textContentType="none"
               value={dateOfBirth}
-              onChangeText={(value) => setDateOfBirth(formatDateOfBirth(value))}
+              onChangeText={setDateOfBirth}
             />
-
-            <TextField
-              autoComplete="password"
-              borderState={confirmPassword ? 'success' : 'default'}
-              label="Confirm Password"
-              secureTextEntry
-              secureToggle
-              textContentType="password"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-            />
+            <ThemedText type="body" themeColor="textMuted">
+              You must be 18 or older to use JMJ
+            </ThemedText>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.four,
-    gap: Spacing.five,
-  },
-  title: {
-    textAlign: 'left',
-  },
-  form: {
-    gap: Spacing.three,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-  },
-  nameField: {
-    flex: 1,
-  },
-});

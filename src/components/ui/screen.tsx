@@ -2,7 +2,6 @@ import { type ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
-  StyleSheet,
   View,
   type ViewProps,
 } from 'react-native';
@@ -10,7 +9,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { IconButton } from '@/components/ui/icon-button';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { cn } from '@/lib/cn';
 
 type ScreenProps = ViewProps & {
   children: ReactNode;
@@ -21,6 +20,8 @@ type ScreenProps = ViewProps & {
   onHelp?: () => void;
   showBackButton?: boolean;
   showHelpButton?: boolean;
+  hideHeader?: boolean;
+  className?: string;
 };
 
 export function Screen({
@@ -32,34 +33,38 @@ export function Screen({
   onHelp,
   showBackButton = true,
   showHelpButton = false,
+  hideHeader = false,
+  className,
   style,
   ...rest
 }: ScreenProps) {
   const insets = useSafeAreaInsets();
 
   const content = (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      <View style={styles.header}>
-        {showBackButton && onBack ? (
-          <IconButton accessibilityLabel="Go back" icon="back" onPress={onBack} />
-        ) : (
-          <View style={styles.headerSide} />
-        )}
-
-        {headerRight ??
-          (showHelpButton && onHelp ? (
-            <IconButton accessibilityLabel="Help" icon="help" onPress={onHelp} />
+    <SafeAreaView className="flex-1" edges={['top', 'left', 'right']}>
+      {hideHeader ? null : (
+        <View className="flex-row items-center justify-between px-4 pt-1">
+          {showBackButton && onBack ? (
+            <IconButton accessibilityLabel="Go back" icon="back" onPress={onBack} />
           ) : (
-            <View style={styles.headerSide} />
-          ))}
-      </View>
+            <View className="w-10 h-10" />
+          )}
 
-      <View style={[styles.content, style]} {...rest}>
+          {headerRight ??
+            (showHelpButton && onHelp ? (
+              <IconButton accessibilityLabel="Help" icon="help" onPress={onHelp} />
+            ) : (
+              <View className="w-10 h-10" />
+            ))}
+        </View>
+      )}
+
+      <View className={cn('flex-1 px-6', className)} style={style} {...rest}>
         {children}
       </View>
 
       {footer ? (
-        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, Spacing.four) }]}>
+        <View className="px-6" style={{ paddingBottom: Math.max(insets.bottom, 24) }}>
           {footer}
         </View>
       ) : null}
@@ -67,12 +72,12 @@ export function Screen({
   );
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView className="flex-1">
       {keyboardAvoiding ? (
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
-          style={styles.container}>
+          className="flex-1">
           {content}
         </KeyboardAvoidingView>
       ) : (
@@ -81,30 +86,3 @@ export function Screen({
     </ThemedView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.three,
-    paddingTop: Spacing.one,
-  },
-  headerSide: {
-    width: 40,
-    height: 40,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-  },
-  footer: {
-    paddingHorizontal: Spacing.four,
-  },
-});

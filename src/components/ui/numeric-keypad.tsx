@@ -1,15 +1,15 @@
 import { SymbolView } from 'expo-symbols';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Fonts, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { cn } from '@/lib/cn';
 
 type NumericKeypadProps = {
   onBiometricPress?: () => void;
   onDelete: () => void;
   onKeyPress: (digit: string) => void;
   showBiometric?: boolean;
+  className?: string;
 };
 
 const KEYPAD_ROWS = [
@@ -23,80 +23,58 @@ export function NumericKeypad({
   onDelete,
   onBiometricPress,
   showBiometric = true,
+  className,
 }: NumericKeypadProps) {
-  const theme = useTheme();
-
   return (
-    <View style={styles.container}>
+    <View className={cn('gap-2', className)}>
       {KEYPAD_ROWS.map((row, rowIndex) => (
-        <View key={rowIndex} style={styles.row}>
+        <View key={rowIndex} className="flex-row justify-between">
           {row.map((digit) => (
             <Pressable
               key={digit}
               accessibilityRole="button"
               accessibilityLabel={`Number ${digit}`}
               onPress={() => onKeyPress(digit)}
-              style={({ pressed }) => [styles.key, pressed && styles.pressed]}>
-              <ThemedText style={styles.keyLabel}>{digit}</ThemedText>
+              className="flex-1 items-center justify-center min-h-14 max-w-[120px]"
+              style={({ pressed }) => [pressed && { opacity: 0.5 }]}>
+              <ThemedText className="font-geist text-[28px] leading-[34px]">{digit}</ThemedText>
             </Pressable>
           ))}
         </View>
       ))}
 
-      <View style={styles.row}>
+      <View className="flex-row justify-between">
         {showBiometric ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Use biometrics"
             onPress={onBiometricPress}
-            style={({ pressed }) => [styles.key, pressed && styles.pressed]}>
-            <SymbolView name="touchid" size={28} tintColor={theme.icon} weight="regular" />
+            className="flex-1 items-center justify-center min-h-14 max-w-[120px]"
+            style={({ pressed }) => [pressed && { opacity: 0.5 }]}>
+            <SymbolView name="touchid" size={28} tintColor="#000000" weight="regular" />
           </Pressable>
         ) : (
-          <View style={styles.key} />
+          <View className="flex-1 items-center justify-center min-h-14 max-w-[120px]" />
         )}
 
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Number 0"
           onPress={() => onKeyPress('0')}
-          style={({ pressed }) => [styles.key, pressed && styles.pressed]}>
-          <ThemedText style={styles.keyLabel}>0</ThemedText>
+          className="flex-1 items-center justify-center min-h-14 max-w-[120px]"
+          style={({ pressed }) => [pressed && { opacity: 0.5 }]}>
+          <ThemedText className="font-geist text-[28px] leading-[34px]">0</ThemedText>
         </Pressable>
 
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Delete"
           onPress={onDelete}
-          style={({ pressed }) => [styles.key, pressed && styles.pressed]}>
-          <SymbolView name="delete.left" size={24} tintColor={theme.icon} weight="medium" />
+          className="flex-1 items-center justify-center min-h-14 max-w-[120px]"
+          style={({ pressed }) => [pressed && { opacity: 0.5 }]}>
+          <SymbolView name="delete.left" size={24} tintColor="#000000" weight="medium" />
         </Pressable>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    gap: Spacing.two,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  key: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 56,
-    maxWidth: 120,
-  },
-  keyLabel: {
-    fontFamily: Fonts.regular,
-    fontSize: 28,
-    lineHeight: 34,
-  },
-  pressed: {
-    opacity: 0.5,
-  },
-});

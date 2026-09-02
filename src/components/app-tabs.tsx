@@ -1,44 +1,37 @@
-import { Image } from 'expo-image';
 import { Tabs } from 'expo-router';
 
-import { Colors } from '@/constants/theme';
+import { FloatingTabBar } from '@/components/ui/floating-tab-bar';
 
 export default function AppTabs() {
-  const colors = Colors.light;
-
   return (
     <Tabs
+      tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.text,
-        tabBarInactiveTintColor: colors.textSecondary,
-        tabBarStyle: {
-          backgroundColor: colors.background,
-          borderTopColor: colors.backgroundElement,
-        },
+        tabBarShowLabel: false,
       }}>
       <Tabs.Screen
         name="home"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => (
-            <Image
-              source={require('@/assets/images/tabIcons/home.png')}
-              style={{ width: 24, height: 24, tintColor: color }}
-            />
-          ),
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="invest"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => (
-            <Image
-              source={require('@/assets/images/tabIcons/explore.png')}
-              style={{ width: 24, height: 24, tintColor: color }}
-            />
-          ),
+          title: 'Invest',
+        }}
+      />
+      <Tabs.Screen
+        name="pool"
+        options={{
+          title: 'Pool',
+        }}
+      />
+      <Tabs.Screen
+        name="more"
+        options={{
+          title: 'More',
         }}
       />
     </Tabs>

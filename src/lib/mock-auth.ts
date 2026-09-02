@@ -3,15 +3,30 @@ type EmailAvailabilityResult = {
   message?: string;
 };
 
-const REGISTERED_EMAILS = new Set(['example@email.com']);
+const REGISTERED_EMAILS = new Set(["example@email.com"]);
 
 let signupFirstName = '';
+let signupLastName = '';
 
 export function getSignupFirstName() {
   return signupFirstName;
 }
 
-export async function checkEmailAvailability(email: string): Promise<EmailAvailabilityResult> {
+export function getSignupLastName() {
+  return signupLastName;
+}
+
+export function getSignupInitials() {
+  const first = signupFirstName.trim().charAt(0);
+  const last = signupLastName.trim().charAt(0);
+  const initials = `${first}${last}`.toUpperCase();
+
+  return initials || 'AB';
+}
+
+export async function checkEmailAvailability(
+  email: string,
+): Promise<EmailAvailabilityResult> {
   // Placeholder for a future backend check.
   await new Promise((resolve) => setTimeout(resolve, 1200));
 
@@ -20,7 +35,7 @@ export async function checkEmailAvailability(email: string): Promise<EmailAvaila
   if (REGISTERED_EMAILS.has(normalizedEmail)) {
     return {
       available: false,
-      message: 'Email address is already registered.',
+      message: "Email address is already registered.",
     };
   }
 
@@ -50,9 +65,10 @@ export async function submitIdentity(payload: {
   firstName: string;
   lastName: string;
   dateOfBirth: string;
-  confirmPassword: string;
+  confirmPassword?: string;
 }) {
   signupFirstName = payload.firstName.trim();
+  signupLastName = payload.lastName.trim();
   // Placeholder for a future identity submission API call.
   await new Promise((resolve) => setTimeout(resolve, 1200));
 }

@@ -1,0 +1,75 @@
+import { router, type Href } from 'expo-router';
+import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { MoreHeader } from '@/components/more/more-header';
+import { MoreMenuSectionCard } from '@/components/more/more-menu-section';
+import { UpgradeBanner } from '@/components/more/upgrade-banner';
+import {
+  MORE_APP_VERSION,
+  MORE_SECTIONS,
+  type MoreMenuItem,
+} from '@/constants/more-data';
+import { BottomTabInset } from '@/constants/theme';
+
+export default function MoreScreen() {
+  const insets = useSafeAreaInsets();
+
+  function handleItemPress(item: MoreMenuItem) {
+    if (item.action === 'whatsapp') {
+      void Linking.openURL('https://wa.me/');
+      return;
+    }
+
+    if (item.href) {
+      router.push(item.href as Href);
+    }
+  }
+
+  function handleLogout() {
+    router.replace('/auth/sign-in' as Href);
+  }
+
+  return (
+    <View className="flex-1 bg-[#FFF8E9]">
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="gap-5 px-5"
+        contentContainerStyle={{
+          paddingTop: insets.top + 8,
+          paddingBottom: BottomTabInset + 24,
+        }}
+        showsVerticalScrollIndicator={false}>
+        <MoreHeader />
+
+        <UpgradeBanner onPress={() => router.push('/subscriptions' as Href)} />
+
+        {MORE_SECTIONS.map((section) => (
+          <MoreMenuSectionCard key={section.id} section={section} onItemPress={handleItemPress} />
+        ))}
+
+        <View className="mt-1 gap-4">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Log Out"
+            onPress={handleLogout}
+            className="items-center justify-center rounded-[14px] border border-[#FECACA] bg-white py-[15px]"
+            style={({ pressed }) => [pressed && { opacity: 0.9 }]}>
+            <Text className="font-geist-semibold text-[16px] text-error">Log Out</Text>
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Delete Account"
+            onPress={() => {}}
+            className="items-center py-1"
+            style={({ pressed }) => [pressed && { opacity: 0.7 }]}>
+            <Text className="font-geist-medium text-[15px] text-error">Delete Account</Text>
+          </Pressable>
+
+          <Text className="text-center font-geist text-[12px] text-muted">{MORE_APP_VERSION}</Text>
+        </View>
+      </ScrollView>
+    </View>
+  );
+}

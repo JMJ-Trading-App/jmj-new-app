@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,6 @@ import { OtpInput } from '@/components/ui/otp-input';
 import { Screen } from '@/components/ui/screen';
 import { resendEmailCode, verifyEmailCode } from '@/lib/mock-auth';
 import { formatCountdown, useCountdown } from '@/hooks/use-countdown';
-import { Fonts, Spacing } from '@/constants/theme';
 
 const RESEND_SECONDS = 50;
 
@@ -56,19 +55,19 @@ export default function VerifyEmailScreen() {
       footer={
         <Button disabled={!canContinue} label="Continue" loading={loading} onPress={handleContinue} />
       }>
-      <View style={styles.content}>
-        <View style={styles.headerBlock}>
-          <ThemedText type="heading" style={styles.title}>
+      <View className="flex-1 gap-8 pt-2">
+        <View className="gap-2">
+          <ThemedText type="heading" className="text-left">
             Verify your email
           </ThemedText>
-          <ThemedText type="body" themeColor="textMuted" style={styles.subtitle}>
+          <ThemedText type="body" themeColor="textMuted" className="text-left">
             We sent a 6-digit code to {email}
           </ThemedText>
         </View>
 
         <OtpInput value={code} onChange={setCode} />
 
-        <View style={styles.resendRow}>
+        <View className="items-start">
           {canResend ? (
             <Pressable accessibilityRole="button" onPress={handleResend}>
               <ThemedText type="body" themeColor="text">
@@ -78,7 +77,7 @@ export default function VerifyEmailScreen() {
           ) : (
             <ThemedText type="body" themeColor="textMuted">
               Resend in{' '}
-              <ThemedText type="body" themeColor="text" style={styles.resendTimer}>
+              <ThemedText type="body" themeColor="text" className="font-geist-semibold">
                 {formatCountdown(secondsLeft)}
               </ThemedText>
             </ThemedText>
@@ -88,26 +87,3 @@ export default function VerifyEmailScreen() {
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    paddingTop: Spacing.two,
-    gap: Spacing.five,
-  },
-  headerBlock: {
-    gap: Spacing.two,
-  },
-  title: {
-    textAlign: 'left',
-  },
-  subtitle: {
-    textAlign: 'left',
-  },
-  resendRow: {
-    alignItems: 'flex-start',
-  },
-  resendTimer: {
-    fontFamily: Fonts.semiBold,
-  },
-});

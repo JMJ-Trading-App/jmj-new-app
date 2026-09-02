@@ -1,72 +1,51 @@
-import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
-import { Dimensions, StyleSheet, Text, View } from "react-native";
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Dimensions, Text, View } from 'react-native';
 
-import type { WelcomeSlide } from "@/constants/welcome-slides";
-import { Fonts, Spacing } from "@/constants/theme";
+import type { WelcomeSlide } from '@/constants/welcome-slides';
 
-const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
-export const WELCOME_HERO_HEIGHT = SCREEN_HEIGHT * 0.65;
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const IMAGE_TOP_MARGIN = 16;
+export const WELCOME_MESSAGE_HEIGHT = 128;
 
 type WelcomeSlideContentProps = {
+  height: number;
   slide: WelcomeSlide;
+  topInset?: number;
 };
 
-export function WelcomeSlideContent({ slide }: WelcomeSlideContentProps) {
+export function WelcomeSlideContent({
+  slide,
+  height,
+  topInset = 0,
+}: WelcomeSlideContentProps) {
   return (
-    <View style={[styles.slide, { width: SCREEN_WIDTH }]}>
-      <View style={[styles.hero, { height: WELCOME_HERO_HEIGHT }]}>
+    <View className="bg-black" style={{ width: SCREEN_WIDTH, height }}>
+      <View
+        className="absolute left-0 right-0"
+        style={{
+          top: -topInset + IMAGE_TOP_MARGIN,
+          bottom: WELCOME_MESSAGE_HEIGHT,
+        }}>
         <Image
           source={slide.hero}
-          style={styles.heroImage}
+          style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
           contentFit="cover"
         />
         <LinearGradient
-          colors={["transparent", "rgba(0,0,0,0.35)", "#000000"]}
-          locations={[0.45, 0.75, 1]}
-          style={styles.heroGradient}
+          colors={['transparent', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.6)', '#000000']}
+          locations={[0.42, 0.65, 0.82, 1]}
+          style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}
         />
       </View>
 
-      <View style={styles.messageContainer}>
-        <Text style={styles.message}>{slide.message}</Text>
+      <View
+        className="absolute bottom-0 left-0 right-0 justify-start px-6 pt-1"
+        style={{ height: WELCOME_MESSAGE_HEIGHT }}>
+        <Text className="px-1 text-center font-geist-medium text-[22px] leading-8 text-white">
+          {slide.message}
+        </Text>
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  slide: {
-    flex: 1,
-    backgroundColor: "#000000",
-  },
-  hero: {
-    width: "100%",
-    overflow: "hidden",
-  },
-  heroImage: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: "6%",
-    height: "106%",
-  },
-  heroGradient: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  messageContainer: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.three,
-    minHeight: 96,
-  },
-  message: {
-    fontFamily: Fonts.medium,
-    fontSize: 22,
-    lineHeight: 32,
-    color: "#FFFFFF",
-    textAlign: "center",
-    paddingHorizontal: Spacing.two,
-  },
-});

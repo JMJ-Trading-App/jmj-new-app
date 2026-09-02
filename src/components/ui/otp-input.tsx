@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Keyboard, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Keyboard, Pressable, TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { cn } from '@/lib/cn';
 
 const OTP_LENGTH = 6;
 
@@ -11,13 +10,21 @@ type OtpInputProps = {
   length?: number;
   onChange: (value: string) => void;
   value: string;
+  className?: string;
+  /** Gold border on filled cells (used in 2FA verify). */
+  accentFilled?: boolean;
 };
 
-export function OtpInput({ length = OTP_LENGTH, onChange, value }: OtpInputProps) {
-  const theme = useTheme();
+export function OtpInput({
+  length = OTP_LENGTH,
+  onChange,
+  value,
+  className,
+  accentFilled = false,
+}: OtpInputProps) {
   const inputRef = useRef<TextInput>(null);
   const [focused, setFocused] = useState(false);
-  const activeIndex = value.length === 0 ? 0 : value.length - 1;
+  const activeIndex = Math.min(value.length, length - 1);
 
   useEffect(() => {
     if (value.length === length) {
@@ -36,7 +43,7 @@ export function OtpInput({ length = OTP_LENGTH, onChange, value }: OtpInputProps
       accessibilityRole="button"
       accessibilityLabel="Enter verification code"
       onPress={() => inputRef.current?.focus()}
-      style={styles.container}>
+      className={cn('self-stretch', className)}>
       <TextInput
         ref={inputRef}
         autoComplete="one-time-code"
@@ -46,28 +53,29 @@ export function OtpInput({ length = OTP_LENGTH, onChange, value }: OtpInputProps
         value={value}
         caretHidden
         importantForAutofill="yes"
-        style={styles.hiddenInput}
+        className="absolute opacity-0 w-px h-px"
         onBlur={() => setFocused(false)}
         onChangeText={handleChange}
         onFocus={() => setFocused(true)}
       />
 
-      <View style={styles.boxes}>
+      <View className="flex-row justify-between gap-2">
         {Array.from({ length }).map((_, index) => {
           const digit = value[index] ?? '';
+          const isFilled = digit.length > 0;
           const isActive = focused && index === activeIndex;
 
           return (
             <View
               key={index}
-              style={[
-                styles.box,
-                {
-                  backgroundColor: theme.inputBackground,
-                  borderColor: isActive ? theme.borderFocused : theme.border,
-                  borderWidth: isActive ? 2 : 1,
-                },
-              ]}>
+              className={cn(
+                'flex-1 aspect-square max-w-[52px] items-center justify-center rounded-xl bg-input',
+                accentFilled && isFilled
+                  ? 'border border-[#C4A015]'
+                  : isActive
+                    ? 'border-2 border-border-focused'
+                    : 'border border-border',
+              )}>
               <ThemedText type="otpDigit">{digit}</ThemedText>
             </View>
           );
@@ -76,28 +84,3 @@ export function OtpInput({ length = OTP_LENGTH, onChange, value }: OtpInputProps
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignSelf: 'stretch',
-  },
-  hiddenInput: {
-    position: 'absolute',
-    opacity: 0,
-    width: 1,
-    height: 1,
-  },
-  boxes: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: Spacing.two,
-  },
-  box: {
-    flex: 1,
-    aspectRatio: 1,
-    maxWidth: 52,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
