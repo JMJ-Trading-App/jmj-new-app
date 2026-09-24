@@ -5,10 +5,18 @@ import { SuccessBadge } from '@/components/onboarding/success-badge';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { Screen } from '@/components/ui/screen';
-import { getSignupFirstName } from '@/lib/mock-auth';
+import { useSession } from '@/hooks/use-session';
+import { markUnlocked } from '@/lib/lock';
 
 export default function OnboardingCompleteScreen() {
-  const firstName = getSignupFirstName() || 'there';
+  const { user } = useSession();
+  const firstName = user?.firstName?.trim() || 'there';
+  const kycPending = user?.kycStatus !== 'VERIFIED';
+
+  function goHome() {
+    markUnlocked();
+    router.replace('/(tabs)/home');
+  }
 
   return (
     <Screen
@@ -16,12 +24,19 @@ export default function OnboardingCompleteScreen() {
       showBackButton={false}
       footer={
         <View className="gap-4">
-          <Button label="Continue" onPress={() => router.replace('/(tabs)/home')} />
-          <Pressable accessibilityRole="button" onPress={() => router.push('/kyc' as Href)}>
-            <ThemedText className="text-center font-geist-semibold text-base leading-[22px] text-stone-title">
-              Complete KYC now
-            </ThemedText>
-          </Pressable>
+          <Button label="Continue" onPress={goHome} />
+          {kycPending ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                markUnlocked();
+                router.push('/kyc' as Href);
+              }}>
+              <ThemedText className="text-center font-geist-semibold text-base leading-[22px] text-stone-title">
+                Complete KYC now
+              </ThemedText>
+            </Pressable>
+          ) : null}
         </View>
       }>
       <View className="flex-1 pt-8">
@@ -37,11 +52,13 @@ export default function OnboardingCompleteScreen() {
             investing.
           </ThemedText>
 
-          <View className="mt-1 rounded-[37px] bg-kyc-badge px-4 py-1.5">
-            <ThemedText className="font-geist-medium text-[13px] text-stone-title">
-              KYC pending
-            </ThemedText>
-          </View>
+          {kycPending ? (
+            <View className="mt-1 rounded-[37px] bg-kyc-badge px-4 py-1.5">
+              <ThemedText className="font-geist-medium text-[13px] text-stone-title">
+                KYC pending
+              </ThemedText>
+            </View>
+          ) : null}
         </View>
       </View>
     </Screen>

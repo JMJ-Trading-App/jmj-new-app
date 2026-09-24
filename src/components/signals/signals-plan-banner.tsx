@@ -3,15 +3,25 @@ import { Pressable, Text, View } from 'react-native';
 import { SIGNALS_PLAN } from '@/constants/signals-data';
 
 type SignalsPlanBannerProps = {
+  name?: string;
+  summary?: string;
   onManage?: () => void;
 };
 
-export function SignalsPlanBanner({ onManage }: SignalsPlanBannerProps) {
+export function SignalsPlanBanner({
+  name,
+  summary,
+  onManage,
+}: SignalsPlanBannerProps) {
   return (
     <View className="flex-row items-center gap-3 rounded-[16px] border border-[#E8C84A] bg-[#FFF8E9] px-4 py-3.5">
       <View className="min-w-0 flex-1 gap-0.5">
-        <Text className="font-geist-bold text-[15px] text-stone-title">{SIGNALS_PLAN.name}</Text>
-        <Text className="font-geist text-[13px] text-muted">{SIGNALS_PLAN.summary}</Text>
+        <Text className="font-geist-bold text-[15px] text-stone-title">
+          {name ?? SIGNALS_PLAN.name}
+        </Text>
+        <Text className="font-geist text-[13px] text-muted">
+          {summary ?? SIGNALS_PLAN.summary}
+        </Text>
       </View>
 
       <Pressable

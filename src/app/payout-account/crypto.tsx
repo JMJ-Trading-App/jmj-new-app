@@ -1,5 +1,5 @@
 import { router, type Href } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { PayoutFlowShell } from '@/components/payout/payout-flow-shell';
@@ -11,16 +11,32 @@ import {
   maskWalletAddress,
   type SelectOption,
 } from '@/constants/payout-account-data';
+import { alertError, alertSuccess } from '@/lib/errors';
+import { fetchPayoutOptions, saveCryptoPayoutAccount } from '@/lib/payout';
 
 export default function AddCryptoWalletScreen() {
+  const [assets, setAssets] = useState<SelectOption[]>(CRYPTO_ASSETS);
   const [assetId, setAssetId] = useState<string | null>(null);
   const [walletAddress, setWalletAddress] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    void (async () => {
+      try {
+        const options = await fetchPayoutOptions();
+        if (options.cryptoAssets?.length) {
+          setAssets(options.cryptoAssets);
+        }
+      } catch {
+        // Keep local catalog fallback.
+      }
+    })();
+  }, []);
+
   const selectedAsset = useMemo(
-    () => CRYPTO_ASSETS.find((asset) => asset.id === assetId) ?? null,
-    [assetId],
+    () => assets.find((asset) => asset.id === assetId) ?? null,
+    [assetId, assets],
   );
 
   const canSave = Boolean(selectedAsset && walletAddress.trim().length >= 10);
@@ -29,12 +45,20 @@ export default function AddCryptoWalletScreen() {
     if (!canSave || !selectedAsset || loading) return;
 
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    setLoading(false);
-
-    router.push(
-      `/payout-account/success?type=crypto&assetLabel=${encodeURIComponent(selectedAsset.label)}&addressMasked=${encodeURIComponent(maskWalletAddress(walletAddress))}` as Href,
-    );
+    try {
+      const result = await saveCryptoPayoutAccount({
+        assetId: selectedAsset.id,
+        walletAddress,
+      });
+      alertSuccess('Crypto wallet linked for payouts.', 'Saved');
+      router.push(
+        `/payout-account/success?type=crypto&assetLabel=${encodeURIComponent(result.crypto.assetLabel ?? selectedAsset.label)}&addressMasked=${encodeURIComponent(result.crypto.addressMasked ?? maskWalletAddress(walletAddress))}` as Href,
+      );
+    } catch (error) {
+      alertError(error, 'Could not save crypto wallet');
+    } finally {
+      setLoading(false);
+    }
   }
 
   function handleSelect(option: SelectOption) {
@@ -86,7 +110,7 @@ export default function AddCryptoWalletScreen() {
       <SelectOptionPicker
         visible={pickerOpen}
         title="Select Crypto Asset"
-        options={CRYPTO_ASSETS}
+        options={assets}
         selectedId={assetId}
         onClose={() => setPickerOpen(false)}
         onSelect={handleSelect}

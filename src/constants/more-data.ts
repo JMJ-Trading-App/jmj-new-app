@@ -1,4 +1,4 @@
-export type MoreBadgeVariant = 'pending' | 'comingSoon' | 'status';
+export type MoreBadgeVariant = 'pending' | 'comingSoon' | 'verified' | 'status';
 
 export type MoreIconId =
   | 'profile'
@@ -56,7 +56,7 @@ export const MORE_SECTIONS: MoreMenuSection[] = [
         label: 'KYC Verification',
         icon: 'kyc',
         href: '/kyc',
-        badge: { label: 'Pending', variant: 'pending' },
+        // Badge is applied dynamically from session kycStatus in more.tsx
       },
       {
         id: 'notifications',
@@ -120,3 +120,27 @@ export const MORE_SECTIONS: MoreMenuSection[] = [
 ];
 
 export const MORE_APP_VERSION = 'JMJ v2.0.1';
+
+export function kycMoreBadge(status?: string | null): MoreMenuItem['badge'] {
+  switch ((status || '').toUpperCase()) {
+    case 'VERIFIED':
+      return { label: 'Verified', variant: 'verified' };
+    case 'SUBMITTED':
+      return { label: 'In review', variant: 'pending' };
+    case 'REJECTED':
+      return { label: 'Rejected', variant: 'pending' };
+    default:
+      return { label: 'Pending', variant: 'pending' };
+  }
+}
+
+export function moreSectionsWithUser(kycStatus?: string | null): MoreMenuSection[] {
+  return MORE_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.map((item) =>
+      item.id === 'kyc'
+        ? { ...item, badge: kycMoreBadge(kycStatus) }
+        : item,
+    ),
+  }));
+}

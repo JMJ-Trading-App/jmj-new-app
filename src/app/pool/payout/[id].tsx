@@ -1,27 +1,74 @@
+import { useFocusEffect } from 'expo-router';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyActivityIcon } from '@/components/home/home-icons';
 import { InfoCircleIcon } from '@/components/invest/invest-flow-icons';
 import { PayoutAccountCard } from '@/components/invest/payout-account-card';
 import { Button } from '@/components/ui/button';
-import { PAYOUT_ACCOUNTS } from '@/constants/invest-flow-data';
-import { getPoolById } from '@/constants/pool-data';
+import type { PayoutAccount } from '@/constants/invest-flow-data';
+import { alertError } from '@/lib/errors';
+import { fetchPool } from '@/lib/pool';
+import { setPoolDraftPool } from '@/lib/pool-draft';
+import { fetchPayoutAccounts } from '@/lib/payout';
 
 export default function PoolPayoutAccountScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const pool = getPoolById(id ?? 'alpha-growth');
+  const [loading, setLoading] = useState(true);
+  const [poolName, setPoolName] = useState<string | null>(null);
+  const [accounts, setAccounts] = useState<PayoutAccount[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const accounts = PAYOUT_ACCOUNTS;
-  const defaultAccount = accounts.find((account) => account.isDefault) ?? accounts[0];
-  const [selectedId, setSelectedId] = useState<string | null>(defaultAccount?.id ?? null);
-  const isEmpty = accounts.length === 0;
+  const load = useCallback(async () => {
+    if (!id) return;
+    try {
+      const [pool, payout] = await Promise.all([fetchPool(id), fetchPayoutAccounts()]);
+      setPoolName(pool.name);
+      setPoolDraftPool(pool.id, pool.name);
 
-  if (!pool) {
+      const next: PayoutAccount[] = [];
+      if (payout.bank) {
+        next.push({
+          id: payout.bank.id,
+          title: `${payout.bank.bankName ?? 'Bank'} ${payout.bank.accountMasked ?? ''}`.trim(),
+          subtitle: 'Naira Payout',
+          type: 'bank',
+          badge: payout.bank.isDefault ? 'DEFAULT' : undefined,
+          isDefault: payout.bank.isDefault,
+        });
+      }
+      if (payout.crypto) {
+        next.push({
+          id: payout.crypto.id,
+          title: `${payout.crypto.assetLabel ?? 'Crypto'} · ${payout.crypto.addressMasked ?? ''}`.trim(),
+          subtitle: 'Crypto Wallet',
+          type: 'crypto',
+          badge: 'CRYPTO',
+          isDefault: payout.crypto.isDefault,
+        });
+      }
+      setAccounts(next);
+      setSelectedId(next.find((a) => a.isDefault)?.id ?? next[0]?.id ?? null);
+    } catch (error) {
+      alertError(error, 'Could not load payout accounts');
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
+
+  const isEmpty = !loading && accounts.length === 0;
+
+  if (!loading && !poolName) {
     return (
       <View className="flex-1 items-center justify-center bg-white px-5">
         <Text className="font-geist-bold text-base text-stone-title">Pool not found</Text>
@@ -59,12 +106,15 @@ export default function PoolPayoutAccountScreen() {
             Where should we send your returns?
           </Text>
           <Text className="font-geist text-[14px] leading-[20px] text-stone-body">
-            Select one of your saved accounts below. Investment payouts and returns will be
-            automatically credited here.
+            Select one of your saved accounts below. Pool payouts and returns will be credited here.
           </Text>
         </View>
 
-        {isEmpty ? (
+        {loading ? (
+          <View className="items-center py-10">
+            <ActivityIndicator color="#C4A015" />
+          </View>
+        ) : isEmpty ? (
           <View className="items-center gap-3 py-10">
             <EmptyActivityIcon color="#D1D5DB" size={56} />
             <Text className="font-geist-bold text-[16px] text-stone-title">
@@ -86,7 +136,6 @@ export default function PoolPayoutAccountScreen() {
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Link a new payout account"
           onPress={() => router.push('/payout-account/method' as Href)}
           className="items-center justify-center rounded-[18px] border border-dashed border-[#D1D5DB] py-4"
           style={({ pressed }) => [pressed && { opacity: 0.85 }]}>
@@ -107,9 +156,9 @@ export default function PoolPayoutAccountScreen() {
 
       <View className="px-5" style={{ paddingBottom: Math.max(insets.bottom, 24) }}>
         <Button
-          disabled={isEmpty || !selectedId}
+          disabled={isEmpty || !selectedId || loading}
           label="Next"
-          onPress={() => router.push(`/pool/payment/${pool.id}` as Href)}
+          onPress={() => router.push(`/pool/payment/${id}` as Href)}
         />
       </View>
     </View>

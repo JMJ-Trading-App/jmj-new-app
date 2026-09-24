@@ -41,3 +41,10 @@ example
 # generated native folders
 /ios
 /android
+
+.env
+.env.local
+
+# Firebase / FCM (set via GOOGLE_SERVICES_JSON or copy locally)
+google-services.json
+GoogleService-Info.plist

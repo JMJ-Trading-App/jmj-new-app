@@ -1,7 +1,9 @@
+import * as Clipboard from 'expo-clipboard';
+import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -12,13 +14,27 @@ import {
   UploadIcon,
 } from '@/components/invest/invest-flow-icons';
 import { Button } from '@/components/ui/button';
-import { getPaymentMethods, type PaymentMethodId } from '@/constants/invest-flow-data';
 import {
-  getPoolById,
+  getPaymentMethods,
+  type PaymentInstructions,
+  type PaymentMethodId,
+} from '@/constants/invest-flow-data';
+import {
   getPoolJoinProjection,
   parsePoolSize,
+  type PoolItem,
 } from '@/constants/pool-data';
+import type { PaymentMethodApi, PoolItemApi } from '@/lib/api/types';
 import { cn } from '@/lib/cn';
+import { alertError, alertSuccess } from '@/lib/errors';
+import { fetchPool, fetchPoolOptions, joinPool } from '@/lib/pool';
+import {
+  getPoolDraft,
+  setPoolPaymentMethod,
+  setPoolPaymentProof,
+  setPoolSubmitResult,
+} from '@/lib/pool-draft';
+import { uploadPaymentProof } from '@/lib/payments';
 
 const METHOD_ICONS = {
   bank: BankTransferIcon,
@@ -26,14 +42,87 @@ const METHOD_ICONS = {
   eth: EthereumIcon,
 } as const;
 
+const METHOD_TO_API: Record<PaymentMethodId, PaymentMethodApi> = {
+  bank: 'BANK',
+  btc: 'BTC',
+  eth: 'ETH',
+};
+
+const API_TO_METHOD: Record<PaymentMethodApi, PaymentMethodId> = {
+  BANK: 'bank',
+  BTC: 'btc',
+  ETH: 'eth',
+};
+
+function guessMime(uri: string) {
+  const lower = uri.toLowerCase();
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.pdf')) return 'application/pdf';
+  return 'image/jpeg';
+}
+
+function mapPool(pool: PoolItemApi): PoolItem {
+  return {
+    id: pool.id,
+    name: pool.name,
+    status: pool.status,
+    shortDescription: pool.shortDescription,
+    about: pool.about,
+    duration: pool.duration,
+    minContribution: pool.minContribution,
+    minContributionValue: pool.minContributionValue,
+    contributorsLabel: pool.contributorsLabel,
+    contributorsJoined: pool.contributorsJoined,
+    contributorsNeeded: pool.contributorsNeeded,
+    raisedLabel: pool.raisedLabel,
+    raisedProgress: pool.raisedProgress,
+    joinProgress: pool.joinProgress,
+    poolSize: pool.poolSize,
+    returns: pool.returns,
+    opensIn: pool.opensIn,
+    targetLabel: pool.targetLabel,
+    returnLabel: pool.returnLabel,
+    yourEarnings: pool.yourEarnings,
+    position: pool.position,
+    gains: pool.gains,
+    ctaLabel: pool.ctaLabel,
+  };
+}
+
 export default function PoolPaymentScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const pool = getPoolById(id ?? 'alpha-growth');
-  const [methodId, setMethodId] = useState<PaymentMethodId>('eth');
+  const draft = getPoolDraft();
+  const [methodId, setMethodId] = useState<PaymentMethodId>(
+    API_TO_METHOD[draft.paymentMethod] ?? 'eth',
+  );
   const [accepted, setAccepted] = useState(false);
-  const [attachmentName, setAttachmentName] = useState<string | null>(null);
+  const [attachmentName, setAttachmentName] = useState<string | null>(
+    draft.paymentProofName,
+  );
+  const [proofUrl, setProofUrl] = useState<string | null>(draft.paymentProofUrl);
   const [copiedLabel, setCopiedLabel] = useState<string | null>(null);
+  const [pool, setPool] = useState<PoolItem | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [instructions, setInstructions] = useState<PaymentInstructions | undefined>();
+  const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    void (async () => {
+      if (!id) return;
+      try {
+        const result = await fetchPool(id);
+        setPool(mapPool(result));
+        const options = await fetchPoolOptions();
+        setInstructions(options.paymentInstructions);
+      } catch (error) {
+        alertError(error, 'Could not load payment details');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id]);
 
   const projection = useMemo(() => {
     if (!pool) return null;
@@ -41,9 +130,21 @@ export default function PoolPaymentScreen() {
   }, [pool]);
 
   const methods = useMemo(
-    () => getPaymentMethods(projection?.serviceCharge ?? 0),
-    [projection?.serviceCharge],
+    () =>
+      getPaymentMethods(projection?.serviceCharge ?? 0, {
+        reference: 'Will be issued on submit',
+        instructions,
+      }),
+    [projection?.serviceCharge, instructions],
   );
+
+  if (loading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <ActivityIndicator color="#C4A015" />
+      </View>
+    );
+  }
 
   if (!pool || !projection) {
     return (
@@ -58,9 +159,74 @@ export default function PoolPaymentScreen() {
 
   const selected = methods.find((method) => method.id === methodId) ?? methods[0];
 
-  function handleCopy(label: string) {
+  async function handleCopy(label: string, value: string) {
+    await Clipboard.setStringAsync(value);
     setCopiedLabel(label);
     setTimeout(() => setCopiedLabel(null), 1500);
+  }
+
+  async function handleUpload() {
+    if (uploading) return;
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      alertError(new Error('Photo library permission is required.'), 'Permission needed');
+      return;
+    }
+
+    const picked = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.85,
+    });
+    if (picked.canceled || !picked.assets[0]) return;
+
+    const asset = picked.assets[0];
+    const name = asset.fileName ?? 'payment-receipt.jpg';
+    const mimeType = asset.mimeType ?? guessMime(asset.uri);
+
+    setUploading(true);
+    try {
+      const uploaded = await uploadPaymentProof({
+        uri: asset.uri,
+        name,
+        type: mimeType,
+      });
+      setAttachmentName(uploaded.fileName || name);
+      setProofUrl(uploaded.fileUrl);
+      setPoolPaymentProof({
+        fileUrl: uploaded.fileUrl,
+        fileName: uploaded.fileName || name,
+      });
+      alertSuccess('Payment screenshot uploaded');
+    } catch (error) {
+      alertError(error, 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleSubmit() {
+    if (submitting || !pool) return;
+    setSubmitting(true);
+    const paymentMethod = METHOD_TO_API[methodId];
+    setPoolPaymentMethod(paymentMethod);
+
+    try {
+      const result = await joinPool(pool.id, {
+        paymentMethod,
+        paymentProofUrl: proofUrl ?? undefined,
+        contributionUsd: pool.minContributionValue,
+      });
+      setPoolSubmitResult({
+        paymentReference: result.paymentReference,
+        serviceCharge: result.serviceCharge,
+      });
+      alertSuccess(result.message);
+      router.push(`/pool/status/${pool.id}` as Href);
+    } catch (error) {
+      alertError(error, 'Could not submit pool contribution');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -148,7 +314,7 @@ export default function PoolPaymentScreen() {
                       accessibilityRole="button"
                       accessibilityLabel={`Copy ${row.label}`}
                       hitSlop={8}
-                      onPress={() => handleCopy(row.label)}>
+                      onPress={() => void handleCopy(row.label, row.value)}>
                       <CopyIcon color={copiedLabel === row.label ? '#16A34A' : '#9CA3AF'} />
                     </Pressable>
                   ) : null}
@@ -166,12 +332,17 @@ export default function PoolPaymentScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Upload attachment"
-            onPress={() => setAttachmentName('payment-receipt.jpg')}
+            disabled={uploading}
+            onPress={() => void handleUpload()}
             className="items-center justify-center gap-2 rounded-[18px] border border-dashed border-[#D1D5DB] px-4 py-8"
             style={({ pressed }) => [pressed && { opacity: 0.9 }]}>
             <UploadIcon />
             <Text className="font-geist-medium text-[15px] text-[#C4A015]">
-              {attachmentName ? attachmentName : 'Upload attachment'}
+              {uploading
+                ? 'Uploading…'
+                : attachmentName
+                  ? attachmentName
+                  : 'Upload attachment'}
             </Text>
             <Text className="font-geist text-[12px] text-muted">PDF, JPG, PNG up to 5MB</Text>
           </Pressable>
@@ -199,9 +370,9 @@ export default function PoolPaymentScreen() {
         </Pressable>
 
         <Button
-          disabled={!accepted}
-          label="Submit"
-          onPress={() => router.push(`/pool/status/${pool.id}` as Href)}
+          disabled={!accepted || submitting}
+          label={submitting ? 'Submitting…' : 'Submit'}
+          onPress={() => void handleSubmit()}
         />
       </View>
     </View>

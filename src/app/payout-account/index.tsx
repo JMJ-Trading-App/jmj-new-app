@@ -1,25 +1,54 @@
+import { useFocusEffect } from 'expo-router';
 import { router, type Href } from 'expo-router';
-import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Text, View } from 'react-native';
 
 import { PayoutFlowShell } from '@/components/payout/payout-flow-shell';
 import {
   PayoutHubBankCard,
   PayoutHubCryptoCard,
 } from '@/components/payout/payout-hub-cards';
+import { CRYPTO_HUB_SUBTITLE } from '@/constants/payout-account-data';
+import { alertError } from '@/lib/errors';
 import {
-  CRYPTO_HUB_SUBTITLE,
-  DEFAULT_LINKED_BANK,
-} from '@/constants/payout-account-data';
-import { getSignupFirstName } from '@/lib/mock-auth';
+  fetchPayoutAccounts,
+  type BankPayoutAccount,
+  type CryptoPayoutAccount,
+} from '@/lib/payout';
 
 export default function PayoutAccountsHubScreen() {
-  // Mock: bank is already linked after the add flow (matches design).
-  const [bankAdded] = useState(true);
-  const [cryptoAdded] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [bank, setBank] = useState<BankPayoutAccount | null>(null);
+  const [crypto, setCrypto] = useState<CryptoPayoutAccount | null>(null);
 
-  const accountName = getSignupFirstName() || DEFAULT_LINKED_BANK.accountName;
-  const bankDetail = `${DEFAULT_LINKED_BANK.bankName} · ${DEFAULT_LINKED_BANK.accountMasked} · ${accountName}`;
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      void (async () => {
+        try {
+          const accounts = await fetchPayoutAccounts();
+          if (!active) return;
+          setBank(accounts.bank);
+          setCrypto(accounts.crypto);
+        } catch (error) {
+          if (active) alertError(error, 'Could not load payout accounts');
+        } finally {
+          if (active) setLoading(false);
+        }
+      })();
+      return () => {
+        active = false;
+      };
+    }, []),
+  );
+
+  const bankDetail = bank
+    ? `${bank.bankName} · ${bank.accountMasked} · ${bank.accountName}`
+    : undefined;
+
+  const cryptoDetail = crypto
+    ? `${crypto.assetLabel} · ${crypto.addressMasked}`
+    : CRYPTO_HUB_SUBTITLE;
 
   return (
     <PayoutFlowShell
@@ -35,19 +64,25 @@ export default function PayoutAccountsHubScreen() {
         </Text>
       </View>
 
-      <View className="gap-3">
-        <PayoutHubBankCard
-          added={bankAdded}
-          detail={bankDetail}
-          onAdd={() => router.push('/payout-account/bank' as Href)}
-        />
+      {loading ? (
+        <View className="items-center py-10">
+          <ActivityIndicator color="#C4A015" />
+        </View>
+      ) : (
+        <View className="gap-3">
+          <PayoutHubBankCard
+            added={Boolean(bank)}
+            detail={bankDetail}
+            onAdd={() => router.push('/payout-account/bank' as Href)}
+          />
 
-        <PayoutHubCryptoCard
-          added={cryptoAdded}
-          detail={CRYPTO_HUB_SUBTITLE}
-          onAdd={() => router.push('/payout-account/crypto' as Href)}
-        />
-      </View>
+          <PayoutHubCryptoCard
+            added={Boolean(crypto)}
+            detail={cryptoDetail}
+            onAdd={() => router.push('/payout-account/crypto' as Href)}
+          />
+        </View>
+      )}
     </PayoutFlowShell>
   );
 }

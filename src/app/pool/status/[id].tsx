@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams, type Href } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -8,15 +8,8 @@ import {
   SuccessCheckBadge,
   WhatsAppIcon,
 } from '@/components/invest/invest-flow-icons';
-import { formatUsd } from '@/constants/invest-flow-data';
-import {
-  getPoolById,
-  getPoolJoinProjection,
-  parsePoolSize,
-} from '@/constants/pool-data';
 import { cn } from '@/lib/cn';
-
-const POOL_PAYMENT_REFERENCE = 'JMJ-POOL-4821';
+import { getPoolDraft } from '@/lib/pool-draft';
 
 const STATUS_STEPS = [
   { id: 'submitted', title: 'Payment Submitted', subtitle: 'Completed', state: 'done' },
@@ -26,13 +19,10 @@ const STATUS_STEPS = [
 
 export default function PoolStatusScreen() {
   const insets = useSafeAreaInsets();
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const pool = getPoolById(id ?? 'alpha-growth');
-  const projection = pool
-    ? getPoolJoinProjection(pool.minContributionValue, parsePoolSize(pool.poolSize))
-    : null;
-  const serviceCharge = formatUsd(projection?.serviceCharge ?? 0);
-  const poolName = pool?.name ?? 'this pool';
+  const draft = getPoolDraft();
+  const serviceCharge = draft.serviceCharge ?? 'your';
+  const poolName = draft.poolName ?? 'this pool';
+  const reference = draft.paymentReference ?? '—';
 
   function goPools() {
     router.replace('/(tabs)/pool' as Href);
@@ -59,9 +49,7 @@ export default function PoolStatusScreen() {
             verify your payment and activate your pool position.
           </Text>
           <View className="rounded-full bg-[#F3F4F6] px-4 py-2">
-            <Text className="font-geist-medium text-[13px] text-muted">
-              Ref: {POOL_PAYMENT_REFERENCE}
-            </Text>
+            <Text className="font-geist-medium text-[13px] text-muted">Ref: {reference}</Text>
           </View>
         </View>
 
@@ -125,7 +113,7 @@ export default function PoolStatusScreen() {
           accessibilityRole="button"
           accessibilityLabel="Follow up on WhatsApp"
           onPress={() => Linking.openURL('https://wa.me/')}
-          className="flex-row items-center justify-center gap-2 rounded-[14px] border border-[#B7E4C7] bg-[#E8F8F0] py-[16px]"
+          className="flex-row items-center justify-center gap-2 rounded-[14px] bg-[#E8F8F0] py-[16px]"
           style={({ pressed }) => [pressed && { opacity: 0.9 }]}>
           <WhatsAppIcon />
           <Text className="font-geist-semibold text-[16px] text-[#128C7E]">
@@ -139,7 +127,7 @@ export default function PoolStatusScreen() {
             onPress={goPools}
             className="flex-1 items-center justify-center rounded-[14px] bg-stone-title py-[16px]"
             style={({ pressed }) => [pressed && { opacity: 0.9 }]}>
-            <Text className="font-geist-semibold text-[16px] text-white">My Pools</Text>
+            <Text className="font-geist-semibold text-[16px] text-white">Back to Pools</Text>
           </Pressable>
 
           <Pressable
@@ -147,7 +135,7 @@ export default function PoolStatusScreen() {
             onPress={goHome}
             className="flex-1 items-center justify-center rounded-[14px] border border-stone-title bg-white py-[16px]"
             style={({ pressed }) => [pressed && { opacity: 0.9 }]}>
-            <Text className="font-geist-semibold text-[16px] text-stone-title">Back to Home</Text>
+            <Text className="font-geist-semibold text-[16px] text-stone-title">Home</Text>
           </Pressable>
         </View>
       </View>

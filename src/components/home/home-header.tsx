@@ -5,6 +5,7 @@ import { BellIcon, RankBadgeIcon } from '@/components/home/home-icons';
 type HomeHeaderProps = {
   firstName: string;
   initials: string;
+  unreadCount?: number;
   onNotificationsPress?: () => void;
   onProfilePress?: () => void;
 };
@@ -12,6 +13,7 @@ type HomeHeaderProps = {
 export function HomeHeader({
   firstName,
   initials,
+  unreadCount = 0,
   onNotificationsPress,
   onProfilePress,
 }: HomeHeaderProps) {
@@ -38,8 +40,11 @@ export function HomeHeader({
         accessibilityRole="button"
         accessibilityLabel="Notifications"
         onPress={onNotificationsPress}
-        className="h-11 w-11 items-center justify-center rounded-full bg-[#F3F4F6]">
+        className="relative h-11 w-11 items-center justify-center rounded-full bg-[#F3F4F6]">
         <BellIcon />
+        {unreadCount > 0 ? (
+          <View className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-[#16A34A]" />
+        ) : null}
       </Pressable>
     </View>
   );

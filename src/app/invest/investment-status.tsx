@@ -8,13 +8,8 @@ import {
   SuccessCheckBadge,
   WhatsAppIcon,
 } from '@/components/invest/invest-flow-icons';
-import {
-  DEFAULT_DEPOSIT,
-  formatUsd,
-  getDepositProjection,
-  PAYMENT_REFERENCE,
-} from '@/constants/invest-flow-data';
 import { cn } from '@/lib/cn';
+import { getInvestDraft } from '@/lib/invest-draft';
 
 const STATUS_STEPS = [
   { id: 'submitted', title: 'Payment Submitted', subtitle: 'Completed', state: 'done' },
@@ -24,7 +19,10 @@ const STATUS_STEPS = [
 
 export default function InvestmentStatusScreen() {
   const insets = useSafeAreaInsets();
-  const serviceCharge = formatUsd(getDepositProjection(DEFAULT_DEPOSIT).serviceCharge);
+  const draft = getInvestDraft();
+  const serviceCharge = draft.serviceCharge ?? 'your';
+  const reference = draft.paymentReference ?? '—';
+  const investmentName = draft.investmentName;
 
   function goInvest() {
     router.replace('/(tabs)/invest' as Href);
@@ -47,13 +45,11 @@ export default function InvestmentStatusScreen() {
           <SuccessCheckBadge />
           <Text className="font-geist-bold text-[24px] text-stone-title">Investment Submitted!</Text>
           <Text className="text-center font-geist text-[15px] leading-[22px] text-stone-body">
-            Your {serviceCharge} service charge payment for Growth Fund has been submitted. We will
-            verify your payment and activate the investment.
+            Your {serviceCharge} service charge payment for {investmentName} has been submitted. We
+            will verify your payment and activate the investment.
           </Text>
           <View className="rounded-full bg-[#F3F4F6] px-4 py-2">
-            <Text className="font-geist-medium text-[13px] text-muted">
-              Ref: {PAYMENT_REFERENCE}
-            </Text>
+            <Text className="font-geist-medium text-[13px] text-muted">Ref: {reference}</Text>
           </View>
         </View>
 

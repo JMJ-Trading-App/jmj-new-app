@@ -6,16 +6,16 @@ import { InvestFlowShell } from '@/components/invest/invest-flow-shell';
 import { PaymentSummaryCard } from '@/components/invest/payment-summary-card';
 import { ProjectedReturnsCard } from '@/components/invest/projected-returns-card';
 import {
-  DEFAULT_DEPOSIT,
   DEPOSIT_PRESETS,
   formatUsd,
   formatUsdParts,
   MIN_DEPOSIT,
 } from '@/constants/invest-flow-data';
 import { cn } from '@/lib/cn';
+import { getInvestDraft, setInvestAmount } from '@/lib/invest-draft';
 
 export default function DepositReturnsScreen() {
-  const [deposit, setDeposit] = useState(DEFAULT_DEPOSIT);
+  const [deposit, setDeposit] = useState(getInvestDraft().amountUsd);
   const [expanded, setExpanded] = useState(false);
   const amountParts = useMemo(() => formatUsdParts(deposit), [deposit]);
 
@@ -23,7 +23,11 @@ export default function DepositReturnsScreen() {
     <InvestFlowShell
       title="Deposit & Returns"
       step={3}
-      onNext={() => router.push('/invest/payment' as Href)}>
+      nextDisabled={deposit < MIN_DEPOSIT}
+      onNext={() => {
+        setInvestAmount(deposit);
+        router.push('/invest/payment' as Href);
+      }}>
       <ScrollView
         className="flex-1"
         contentContainerClassName="gap-6 px-5 pb-6 pt-6"

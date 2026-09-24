@@ -1,18 +1,33 @@
+import * as DocumentPicker from 'expo-document-picker';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { UploadIcon } from '@/components/invest/invest-flow-icons';
+import { alertError, alertSuccess } from '@/lib/errors';
+import { clearKycDocument, setKycDocument } from '@/lib/kyc-draft';
+import { uploadKycFile } from '@/lib/kyc';
 
 export type AddressFileValue = {
   name: string;
   sizeLabel: string;
+  fileUrl: string;
+  mimeType: string;
+  sizeBytes?: number;
+  uri?: string;
 };
 
 type AddressFileUploadProps = {
   value: AddressFileValue | null;
   onChange: (value: AddressFileValue | null) => void;
 };
+
+function formatBytes(bytes?: number) {
+  if (!bytes) return 'Uploaded';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 function PdfFileIcon({ size = 36 }: { size?: number }) {
   return (
@@ -39,29 +54,70 @@ export function AddressFileUpload({ value, onChange }: AddressFileUploadProps) {
     };
   }, []);
 
-  function startUpload() {
+  function startProgress() {
+    setProgress(0);
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setProgress((current) => Math.min(current + 12, 90));
+    }, 70);
+  }
+
+  function stopProgress() {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
+    setProgress(100);
+  }
+
+  async function startUpload() {
     if (uploading) return;
 
+    const picked = await DocumentPicker.getDocumentAsync({
+      type: ['application/pdf', 'image/*'],
+      copyToCacheDirectory: true,
+      multiple: false,
+    });
+
+    if (picked.canceled || !picked.assets?.[0]) return;
+
+    const asset = picked.assets[0];
+    const name = asset.name || 'address-document.pdf';
+    const mimeType = asset.mimeType || 'application/pdf';
+
     setUploading(true);
-    setProgress(0);
+    startProgress();
 
-    if (timerRef.current) clearInterval(timerRef.current);
-
-    timerRef.current = setInterval(() => {
-      setProgress((current) => {
-        const next = Math.min(current + 14, 100);
-        if (next >= 100) {
-          if (timerRef.current) clearInterval(timerRef.current);
-          timerRef.current = null;
-          setUploading(false);
-          onChange({
-            name: 'electricity_bill.pdf',
-            sizeLabel: '1.2 MB',
-          });
-        }
-        return next;
+    try {
+      const uploaded = await uploadKycFile({
+        uri: asset.uri,
+        name,
+        type: mimeType,
       });
-    }, 70);
+
+      const next: AddressFileValue = {
+        name: uploaded.fileName || name,
+        sizeLabel: formatBytes(uploaded.sizeBytes ?? asset.size),
+        fileUrl: uploaded.fileUrl,
+        mimeType: uploaded.mimeType || mimeType,
+        sizeBytes: uploaded.sizeBytes ?? asset.size,
+        uri: asset.uri,
+      };
+
+      setKycDocument({
+        slot: 'ADDRESS',
+        fileUrl: next.fileUrl,
+        fileName: next.name,
+        mimeType: next.mimeType,
+        sizeBytes: next.sizeBytes,
+        localUri: next.uri,
+      });
+      onChange(next);
+      alertSuccess('Document uploaded.', 'Uploaded');
+    } catch (error) {
+      alertError(error, 'Upload failed');
+    } finally {
+      stopProgress();
+      setUploading(false);
+    }
   }
 
   if (value && !uploading) {
@@ -81,7 +137,10 @@ export function AddressFileUpload({ value, onChange }: AddressFileUploadProps) {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Remove uploaded document"
-          onPress={() => onChange(null)}
+          onPress={() => {
+            clearKycDocument('ADDRESS');
+            onChange(null);
+          }}
           className="h-8 w-8 items-center justify-center rounded-full bg-[#F3F4F6]"
           style={({ pressed }) => [pressed && { opacity: 0.8 }]}>
           <Text className="font-geist-semibold text-[14px] text-muted">✕</Text>

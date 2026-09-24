@@ -6,7 +6,8 @@ import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
 import { OtpInput } from '@/components/ui/otp-input';
 import { Screen } from '@/components/ui/screen';
-import { resendEmailCode, verifyEmailCode } from '@/lib/mock-auth';
+import { resendEmailCode, verifyEmailCode } from '@/lib/auth';
+import { alertError, alertSuccess } from '@/lib/errors';
 import { formatCountdown, useCountdown } from '@/hooks/use-countdown';
 
 const RESEND_SECONDS = 50;
@@ -27,9 +28,15 @@ export default function VerifyEmailScreen() {
     }
 
     setLoading(true);
-    await verifyEmailCode(String(email), code);
-    setLoading(false);
-    router.push('/auth/identity');
+    try {
+      await verifyEmailCode(String(email), code);
+      alertSuccess('Your email has been verified.', 'Verified');
+      router.push('/auth/identity');
+    } catch (error) {
+      alertError(error, 'Verification failed');
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleResend() {
@@ -38,10 +45,16 @@ export default function VerifyEmailScreen() {
     }
 
     setResending(true);
-    await resendEmailCode(String(email));
-    setResending(false);
-    setCode('');
-    reset(RESEND_SECONDS);
+    try {
+      await resendEmailCode(String(email));
+      setCode('');
+      reset(RESEND_SECONDS);
+      alertSuccess('A new code has been sent to your email.', 'Code resent');
+    } catch (error) {
+      alertError(error, 'Could not resend code');
+    } finally {
+      setResending(false);
+    }
   }
 
   return (
@@ -61,7 +74,7 @@ export default function VerifyEmailScreen() {
             Verify your email
           </ThemedText>
           <ThemedText type="body" themeColor="textMuted" className="text-left">
-            We sent a 6-digit code to {email}
+            We sent a 6-digit code to {email}. It expires in 5 minutes.
           </ThemedText>
         </View>
 

@@ -1,29 +1,86 @@
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PercentBadgeIcon } from '@/components/invest/invest-flow-icons';
 import { Button } from '@/components/ui/button';
 import { formatUsd, formatUsdParts } from '@/constants/invest-flow-data';
 import {
-  getPoolById,
   getPoolJoinProjection,
   parsePoolSize,
+  type PoolItem,
 } from '@/constants/pool-data';
+import type { PoolItemApi } from '@/lib/api/types';
 import { cn } from '@/lib/cn';
+import { alertError } from '@/lib/errors';
+import { fetchPool } from '@/lib/pool';
+import { setPoolDraftPool } from '@/lib/pool-draft';
+
+function mapPool(pool: PoolItemApi): PoolItem {
+  return {
+    id: pool.id,
+    name: pool.name,
+    status: pool.status,
+    shortDescription: pool.shortDescription,
+    about: pool.about,
+    duration: pool.duration,
+    minContribution: pool.minContribution,
+    minContributionValue: pool.minContributionValue,
+    contributorsLabel: pool.contributorsLabel,
+    contributorsJoined: pool.contributorsJoined,
+    contributorsNeeded: pool.contributorsNeeded,
+    raisedLabel: pool.raisedLabel,
+    raisedProgress: pool.raisedProgress,
+    joinProgress: pool.joinProgress,
+    poolSize: pool.poolSize,
+    returns: pool.returns,
+    opensIn: pool.opensIn,
+    targetLabel: pool.targetLabel,
+    returnLabel: pool.returnLabel,
+    yourEarnings: pool.yourEarnings,
+    position: pool.position,
+    gains: pool.gains,
+    ctaLabel: pool.ctaLabel,
+  };
+}
 
 export default function JoinPoolScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const pool = getPoolById(id ?? 'alpha-growth');
   const [accepted, setAccepted] = useState(false);
+  const [pool, setPool] = useState<PoolItem | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    void (async () => {
+      if (!id) return;
+      try {
+        const result = await fetchPool(id);
+        const mapped = mapPool(result);
+        setPool(mapped);
+        setPoolDraftPool(mapped.id, mapped.name);
+      } catch (error) {
+        alertError(error, 'Could not load pool');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id]);
 
   const projection = useMemo(() => {
     if (!pool) return null;
     return getPoolJoinProjection(pool.minContributionValue, parsePoolSize(pool.poolSize));
   }, [pool]);
+
+  if (loading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <ActivityIndicator color="#C4A015" />
+      </View>
+    );
+  }
 
   if (!pool || !projection) {
     return (
@@ -146,8 +203,7 @@ export default function JoinPoolScreen() {
             {accepted ? <Text className="font-geist-bold text-[11px] text-white">✓</Text> : null}
           </View>
           <Text className="flex-1 font-geist text-[14px] leading-[20px] text-stone-title">
-            I have read and accept the{' '}
-            <Text className="underline">Privacy Policy</Text> and{' '}
+            I have read and accept the <Text className="underline">Privacy Policy</Text> and{' '}
             <Text className="underline">Terms and Conditions</Text>
           </Text>
         </Pressable>

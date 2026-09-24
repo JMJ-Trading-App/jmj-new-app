@@ -1,9 +1,10 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
-import { router, type Href } from 'expo-router';
+import { router, useFocusEffect, type Href } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SymbolView } from 'expo-symbols';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -13,6 +14,9 @@ import {
 } from '@/components/kyc/kyc-icons';
 import { Button } from '@/components/ui/button';
 import { KYC_INTRO, KYC_REQUIREMENTS, type KycRequirement } from '@/constants/kyc-data';
+import { useSession } from '@/hooks/use-session';
+import { fetchKycStatus } from '@/lib/kyc';
+import { resetKycDraft } from '@/lib/kyc-draft';
 
 function RequirementIcon({ icon }: { icon: KycRequirement['icon'] }) {
   switch (icon) {
@@ -27,8 +31,131 @@ function RequirementIcon({ icon }: { icon: KycRequirement['icon'] }) {
   }
 }
 
+function goBack() {
+  if (router.canGoBack()) {
+    router.back();
+    return;
+  }
+  router.replace('/(tabs)/more' as Href);
+}
+
+function StatusScreen({
+  title,
+  body,
+  badge,
+  ctaLabel = 'Done',
+  onCta,
+}: {
+  title: string;
+  body: string;
+  badge: string;
+  ctaLabel?: string;
+  onCta?: () => void;
+}) {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <View className="flex-1 bg-white">
+      <StatusBar style="dark" />
+      <View className="px-5" style={{ paddingTop: insets.top + 8 }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          onPress={goBack}
+          className="h-11 w-11 items-center justify-center">
+          <SymbolView name="chevron.left" size={22} tintColor="#1C1917" weight="medium" />
+        </Pressable>
+      </View>
+
+      <View className="flex-1 items-center justify-center gap-5 px-6 pb-8">
+        <Image
+          source={require('@/assets/images/onboarding/shield.png')}
+          style={{ width: 120, height: 120 }}
+          contentFit="contain"
+        />
+        <View className="rounded-full bg-kyc-badge px-4 py-1.5">
+          <Text className="font-geist-semibold text-[13px] text-stone-title">{badge}</Text>
+        </View>
+        <Text className="text-center font-geist-bold text-[24px] leading-[32px] text-stone-title">
+          {title}
+        </Text>
+        <Text className="text-center font-geist text-[15px] leading-[22px] text-stone-body">
+          {body}
+        </Text>
+      </View>
+
+      <View className="px-5" style={{ paddingBottom: Math.max(insets.bottom, 24) }}>
+        <Button label={ctaLabel} onPress={onCta ?? goBack} />
+      </View>
+    </View>
+  );
+}
+
 export default function KycVerificationScreen() {
   const insets = useSafeAreaInsets();
+  const { user, refreshUser } = useSession();
+  const [ready, setReady] = useState(false);
+  const [status, setStatus] = useState(
+    (user?.kycStatus || 'PENDING').toUpperCase(),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      void (async () => {
+        try {
+          const [me, kyc] = await Promise.all([
+            refreshUser(),
+            fetchKycStatus().catch(() => null),
+          ]);
+          if (!active) return;
+          const next = (
+            kyc?.kycStatus ||
+            me?.kycStatus ||
+            user?.kycStatus ||
+            'PENDING'
+          ).toUpperCase();
+          setStatus(next);
+        } finally {
+          if (active) setReady(true);
+        }
+      })();
+      return () => {
+        active = false;
+      };
+    }, [refreshUser, user?.kycStatus]),
+  );
+
+  if (!ready) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <ActivityIndicator color="#1C1917" />
+      </View>
+    );
+  }
+
+  if (status === 'VERIFIED') {
+    return (
+      <StatusScreen
+        badge="Verified"
+        title="Identity verified"
+        body="Your KYC is complete. You can invest, join pools, and withdraw without verifying again."
+      />
+    );
+  }
+
+  if (status === 'SUBMITTED') {
+    return (
+      <StatusScreen
+        badge="In review"
+        title="Verification in progress"
+        body="We've received your documents and are reviewing them. You'll get a notification when it's done — no need to submit again."
+        ctaLabel="Back"
+      />
+    );
+  }
+
+  const rejected = status === 'REJECTED';
 
   return (
     <View className="flex-1 bg-white">
@@ -43,13 +170,7 @@ export default function KycVerificationScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Go back"
-          onPress={() => {
-            if (router.canGoBack()) {
-              router.back();
-              return;
-            }
-            router.replace('/(tabs)/home' as Href);
-          }}
+          onPress={goBack}
           className="h-11 w-11 items-center justify-center rounded-full bg-white"
           style={({ pressed }) => [pressed && { opacity: 0.9 }]}>
           <SymbolView name="chevron.left" size={20} tintColor="#1C1917" weight="medium" />
@@ -68,12 +189,14 @@ export default function KycVerificationScreen() {
           />
 
           <Text className="text-center font-geist-bold text-[28px] leading-[34px] text-white">
-            {KYC_INTRO.title}
+            {rejected ? 'Resubmit your identity' : KYC_INTRO.title}
           </Text>
 
           <View className="w-full rounded-[18px] bg-[#5C4A14] px-4 py-3.5">
             <Text className="text-center font-geist text-[14px] leading-[20px] text-white">
-              {KYC_INTRO.notice}
+              {rejected
+                ? 'Your previous submission was rejected. Update your documents and try again.'
+                : KYC_INTRO.notice}
             </Text>
           </View>
         </View>
@@ -105,8 +228,11 @@ export default function KycVerificationScreen() {
 
       <View className="px-5" style={{ paddingBottom: Math.max(insets.bottom, 24) }}>
         <Button
-          label={KYC_INTRO.cta}
-          onPress={() => router.push('/kyc/identity-document' as Href)}
+          label={rejected ? 'Resubmit verification' : KYC_INTRO.cta}
+          onPress={() => {
+            resetKycDraft();
+            router.push('/kyc/identity-document' as Href);
+          }}
         />
       </View>
     </View>

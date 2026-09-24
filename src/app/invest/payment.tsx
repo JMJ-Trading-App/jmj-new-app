@@ -1,5 +1,7 @@
+import * as Clipboard from 'expo-clipboard';
+import * as ImagePicker from 'expo-image-picker';
 import { router, type Href } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import {
@@ -11,12 +13,22 @@ import {
 } from '@/components/invest/invest-flow-icons';
 import { InvestFlowShell } from '@/components/invest/invest-flow-shell';
 import {
-  DEFAULT_DEPOSIT,
   getDepositProjection,
   getPaymentMethods,
+  type PaymentInstructions,
   type PaymentMethodId,
 } from '@/constants/invest-flow-data';
+import type { PaymentMethodApi } from '@/lib/api/types';
 import { cn } from '@/lib/cn';
+import { alertError, alertSuccess } from '@/lib/errors';
+import { createInvestment, fetchInvestOptions } from '@/lib/invest';
+import {
+  getInvestDraft,
+  setInvestPaymentMethod,
+  setInvestPaymentProof,
+  setInvestSubmitResult,
+} from '@/lib/invest-draft';
+import { uploadPaymentProof } from '@/lib/payments';
 
 const METHOD_ICONS = {
   bank: BankTransferIcon,
@@ -24,28 +36,138 @@ const METHOD_ICONS = {
   eth: EthereumIcon,
 } as const;
 
+const METHOD_TO_API: Record<PaymentMethodId, PaymentMethodApi> = {
+  bank: 'BANK',
+  btc: 'BTC',
+  eth: 'ETH',
+};
+
+const API_TO_METHOD: Record<PaymentMethodApi, PaymentMethodId> = {
+  BANK: 'bank',
+  BTC: 'btc',
+  ETH: 'eth',
+};
+
+function guessMime(uri: string) {
+  const lower = uri.toLowerCase();
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.pdf')) return 'application/pdf';
+  return 'image/jpeg';
+}
+
 export default function PaymentScreen() {
-  const serviceCharge = getDepositProjection(DEFAULT_DEPOSIT).serviceCharge;
-  const methods = useMemo(() => getPaymentMethods(serviceCharge), [serviceCharge]);
-  const [methodId, setMethodId] = useState<PaymentMethodId>('bank');
+  const draft = getInvestDraft();
+  const serviceCharge = getDepositProjection(draft.amountUsd).serviceCharge;
+  const [methodId, setMethodId] = useState<PaymentMethodId>(
+    API_TO_METHOD[draft.paymentMethod] ?? 'bank',
+  );
   const [accepted, setAccepted] = useState(false);
-  const [attachmentName, setAttachmentName] = useState<string | null>(null);
+  const [attachmentName, setAttachmentName] = useState<string | null>(
+    draft.paymentProofName,
+  );
+  const [proofUrl, setProofUrl] = useState<string | null>(draft.paymentProofUrl);
   const [copiedLabel, setCopiedLabel] = useState<string | null>(null);
+  const [instructions, setInstructions] = useState<PaymentInstructions | undefined>();
+  const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    void fetchInvestOptions()
+      .then((options) => setInstructions(options.paymentInstructions))
+      .catch(() => undefined);
+  }, []);
+
+  const methods = useMemo(
+    () =>
+      getPaymentMethods(serviceCharge, {
+        reference: 'Will be issued on submit',
+        instructions,
+      }),
+    [serviceCharge, instructions],
+  );
 
   const selected = methods.find((method) => method.id === methodId) ?? methods[0];
 
-  function handleCopy(label: string) {
+  async function handleCopy(label: string, value: string) {
+    await Clipboard.setStringAsync(value);
     setCopiedLabel(label);
     setTimeout(() => setCopiedLabel(null), 1500);
+  }
+
+  async function handleUpload() {
+    if (uploading) return;
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      alertError(new Error('Photo library permission is required.'), 'Permission needed');
+      return;
+    }
+
+    const picked = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.85,
+    });
+    if (picked.canceled || !picked.assets[0]) return;
+
+    const asset = picked.assets[0];
+    const name = asset.fileName ?? 'payment-receipt.jpg';
+    const mimeType = asset.mimeType ?? guessMime(asset.uri);
+
+    setUploading(true);
+    try {
+      const uploaded = await uploadPaymentProof({
+        uri: asset.uri,
+        name,
+        type: mimeType,
+      });
+      setAttachmentName(uploaded.fileName || name);
+      setProofUrl(uploaded.fileUrl);
+      setInvestPaymentProof({
+        fileUrl: uploaded.fileUrl,
+        fileName: uploaded.fileName || name,
+      });
+      alertSuccess('Payment screenshot uploaded');
+    } catch (error) {
+      alertError(error, 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleSubmit() {
+    if (submitting) return;
+    setSubmitting(true);
+    const paymentMethod = METHOD_TO_API[methodId];
+    setInvestPaymentMethod(paymentMethod);
+
+    try {
+      const result = await createInvestment({
+        amountUsd: draft.amountUsd,
+        riskLevel: draft.riskLevel,
+        paymentMethod,
+        paymentProofUrl: proofUrl ?? undefined,
+        payoutAccountId: draft.payoutAccountId ?? undefined,
+        name: draft.investmentName,
+      });
+      setInvestSubmitResult({
+        paymentReference: result.paymentReference,
+        serviceCharge: result.serviceCharge,
+      });
+      alertSuccess(result.message);
+      router.push('/invest/investment-status' as Href);
+    } catch (error) {
+      alertError(error, 'Could not submit investment');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
     <InvestFlowShell
       title="Payment"
       step={4}
-      nextLabel="Submit"
-      nextDisabled={!accepted}
-      onNext={() => router.push('/invest/investment-status' as Href)}
+      nextLabel={submitting ? 'Submitting…' : 'Submit'}
+      nextDisabled={!accepted || submitting}
+      onNext={() => void handleSubmit()}
       footerExtra={
         <Pressable
           accessibilityRole="checkbox"
@@ -132,7 +254,7 @@ export default function PaymentScreen() {
                       accessibilityRole="button"
                       accessibilityLabel={`Copy ${row.label}`}
                       hitSlop={8}
-                      onPress={() => handleCopy(row.label)}>
+                      onPress={() => void handleCopy(row.label, row.value)}>
                       <CopyIcon color={copiedLabel === row.label ? '#16A34A' : '#9CA3AF'} />
                     </Pressable>
                   ) : null}
@@ -150,12 +272,17 @@ export default function PaymentScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Upload attachment"
-            onPress={() => setAttachmentName('payment-receipt.jpg')}
+            disabled={uploading}
+            onPress={() => void handleUpload()}
             className="items-center justify-center gap-2 rounded-[18px] border border-dashed border-[#D1D5DB] px-4 py-8"
             style={({ pressed }) => [pressed && { opacity: 0.9 }]}>
             <UploadIcon />
             <Text className="font-geist-semibold text-[15px] text-[#C4A015]">
-              {attachmentName ? attachmentName : 'Upload attachment'}
+              {uploading
+                ? 'Uploading…'
+                : attachmentName
+                  ? attachmentName
+                  : 'Upload attachment'}
             </Text>
             <Text className="font-geist text-[12px] text-muted">PDF, JPG, PNG up to 5MB</Text>
           </Pressable>

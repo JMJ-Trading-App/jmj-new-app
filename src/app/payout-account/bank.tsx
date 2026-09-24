@@ -1,5 +1,5 @@
 import { router, type Href } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { PayoutFlowShell } from '@/components/payout/payout-flow-shell';
@@ -11,16 +11,32 @@ import {
   NIGERIAN_BANKS,
   type SelectOption,
 } from '@/constants/payout-account-data';
+import { alertError, alertSuccess } from '@/lib/errors';
+import { fetchPayoutOptions, saveBankPayoutAccount } from '@/lib/payout';
 
 export default function AddBankAccountScreen() {
+  const [banks, setBanks] = useState<SelectOption[]>(NIGERIAN_BANKS);
   const [bankId, setBankId] = useState<string | null>(null);
   const [accountNumber, setAccountNumber] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    void (async () => {
+      try {
+        const options = await fetchPayoutOptions();
+        if (options.banks?.length) {
+          setBanks(options.banks);
+        }
+      } catch {
+        // Keep local catalog fallback.
+      }
+    })();
+  }, []);
+
   const selectedBank = useMemo(
-    () => NIGERIAN_BANKS.find((bank) => bank.id === bankId) ?? null,
-    [bankId],
+    () => banks.find((bank) => bank.id === bankId) ?? null,
+    [bankId, banks],
   );
 
   const canSave = Boolean(selectedBank && accountNumber.trim().length >= 10);
@@ -29,12 +45,20 @@ export default function AddBankAccountScreen() {
     if (!canSave || !selectedBank || loading) return;
 
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    setLoading(false);
-
-    router.push(
-      `/payout-account/success?type=bank&bankName=${encodeURIComponent(selectedBank.label)}&accountMasked=${encodeURIComponent(maskAccountNumber(accountNumber))}&methodLabel=${encodeURIComponent('Bank Transfer (Naira)')}` as Href,
-    );
+    try {
+      const result = await saveBankPayoutAccount({
+        bankId: selectedBank.id,
+        accountNumber,
+      });
+      alertSuccess('Bank account linked for payouts.', 'Saved');
+      router.push(
+        `/payout-account/success?type=bank&bankName=${encodeURIComponent(result.bank.bankName ?? selectedBank.label)}&accountMasked=${encodeURIComponent(result.bank.accountMasked ?? maskAccountNumber(accountNumber))}&methodLabel=${encodeURIComponent(result.bank.methodLabel)}` as Href,
+      );
+    } catch (error) {
+      alertError(error, 'Could not save bank account');
+    } finally {
+      setLoading(false);
+    }
   }
 
   function handleSelect(option: SelectOption) {
@@ -85,7 +109,7 @@ export default function AddBankAccountScreen() {
       <SelectOptionPicker
         visible={pickerOpen}
         title="Select Bank"
-        options={NIGERIAN_BANKS}
+        options={banks}
         selectedId={bankId}
         onClose={() => setPickerOpen(false)}
         onSelect={handleSelect}

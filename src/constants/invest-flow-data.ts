@@ -123,8 +123,52 @@ export type PaymentMethodOption = {
 
 export const PAYMENT_REFERENCE = 'JMJ-INV-4821';
 
-export function getPaymentMethods(serviceChargeUsd: number): PaymentMethodOption[] {
+export type PaymentInstructions = {
+  bank: {
+    bankName: string;
+    accountName: string;
+    accountNumber: string;
+  };
+  btc: {
+    network: string;
+    walletAddress: string;
+    amountBtcHint: string;
+  };
+  eth: {
+    network: string;
+    walletAddress: string;
+    amountEthHint: string;
+  };
+};
+
+const DEFAULT_PAYMENT_INSTRUCTIONS: PaymentInstructions = {
+  bank: {
+    bankName: 'First National Bank',
+    accountName: 'JMJ Holdings Ltd',
+    accountNumber: '0123456789',
+  },
+  btc: {
+    network: 'Bitcoin (BTC)',
+    walletAddress: 'bc1qxy2kgdygjrsqtzq2n0zd5wexgrrqx023ux9p0x',
+    amountBtcHint: '0.00417 BTC',
+  },
+  eth: {
+    network: 'Ethereum (ETH)',
+    walletAddress: '0x71C7656EC7ab88b098deaf765432109876543210',
+    amountEthHint: '0.0625 ETH',
+  },
+};
+
+export function getPaymentMethods(
+  serviceChargeUsd: number,
+  options?: {
+    reference?: string;
+    instructions?: PaymentInstructions;
+  },
+): PaymentMethodOption[] {
   const amountUsd = formatUsd(serviceChargeUsd);
+  const reference = options?.reference ?? PAYMENT_REFERENCE;
+  const instructions = options?.instructions ?? DEFAULT_PAYMENT_INSTRUCTIONS;
 
   return [
     {
@@ -132,11 +176,15 @@ export function getPaymentMethods(serviceChargeUsd: number): PaymentMethodOption
       label: 'Bank Transfer',
       detailsTitle: 'Transfer Details',
       rows: [
-        { label: 'Bank Name', value: 'First National Bank' },
-        { label: 'Account Name', value: 'JMJ Holdings Ltd' },
-        { label: 'Account Number', value: '0123456789', copyable: true },
+        { label: 'Bank Name', value: instructions.bank.bankName },
+        { label: 'Account Name', value: instructions.bank.accountName },
+        {
+          label: 'Account Number',
+          value: instructions.bank.accountNumber,
+          copyable: true,
+        },
         { label: 'Amount', value: amountUsd, copyable: true },
-        { label: 'Reference', value: PAYMENT_REFERENCE, copyable: true },
+        { label: 'Reference', value: reference, copyable: true },
       ],
     },
     {
@@ -144,15 +192,19 @@ export function getPaymentMethods(serviceChargeUsd: number): PaymentMethodOption
       label: 'BTC',
       detailsTitle: 'Bitcoin Payment Details',
       rows: [
-        { label: 'Network', value: 'Bitcoin (BTC)' },
+        { label: 'Network', value: instructions.btc.network },
         {
           label: 'Wallet Address',
-          value: 'bc1qxy2kgdygjrsqtzq2n0...',
+          value: instructions.btc.walletAddress,
           copyable: true,
         },
-        { label: 'Amount (BTC)', value: '0.00417 BTC', copyable: true },
+        {
+          label: 'Amount (BTC)',
+          value: instructions.btc.amountBtcHint,
+          copyable: true,
+        },
         { label: 'Amount (USD)', value: amountUsd },
-        { label: 'Reference', value: PAYMENT_REFERENCE, copyable: true },
+        { label: 'Reference', value: reference, copyable: true },
       ],
     },
     {
@@ -160,15 +212,19 @@ export function getPaymentMethods(serviceChargeUsd: number): PaymentMethodOption
       label: 'ETH',
       detailsTitle: 'Ethereum Payment Details',
       rows: [
-        { label: 'Network', value: 'Ethereum (ETH)' },
+        { label: 'Network', value: instructions.eth.network },
         {
           label: 'Wallet Address',
-          value: '0x71C7656EC7ab88b0...',
+          value: instructions.eth.walletAddress,
           copyable: true,
         },
-        { label: 'Amount (ETH)', value: '0.0625 ETH', copyable: true },
+        {
+          label: 'Amount (ETH)',
+          value: instructions.eth.amountEthHint,
+          copyable: true,
+        },
         { label: 'Amount (USD)', value: amountUsd },
-        { label: 'Reference', value: PAYMENT_REFERENCE, copyable: true },
+        { label: 'Reference', value: reference, copyable: true },
       ],
     },
   ];

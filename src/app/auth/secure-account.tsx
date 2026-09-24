@@ -8,7 +8,13 @@ import { Button } from '@/components/ui/button';
 import { NumericKeypad } from '@/components/ui/numeric-keypad';
 import { PinInput } from '@/components/ui/pin-input';
 import { Screen } from '@/components/ui/screen';
-import { submitSecureAccount } from '@/lib/mock-auth';
+import { submitSecureAccount } from '@/lib/auth';
+import { alertError, alertSuccess } from '@/lib/errors';
+import {
+  authenticateWithBiometrics,
+  canUseDeviceBiometrics,
+  getBiometricLabel,
+} from '@/lib/lock';
 
 const PIN_LENGTH = 4;
 
@@ -16,6 +22,7 @@ export default function SecureAccountScreen() {
   const [pin, setPin] = useState('');
   const [biometricsEnabled, setBiometricsEnabled] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [bioLoading, setBioLoading] = useState(false);
 
   const canContinue = useMemo(() => pin.length === PIN_LENGTH, [pin.length]);
 
@@ -29,15 +36,52 @@ export default function SecureAccountScreen() {
     setPin((current) => current.slice(0, -1));
   }
 
+  async function handleBiometricPress() {
+    if (bioLoading) return;
+    setBioLoading(true);
+    try {
+      const available = await canUseDeviceBiometrics();
+      if (!available) {
+        setBiometricsEnabled(false);
+        const label = await getBiometricLabel();
+        alertError(
+          new Error(`Set up ${label} in your device settings, then try again.`),
+          'Biometrics unavailable',
+        );
+        return;
+      }
+
+      const label = await getBiometricLabel();
+      const ok = await authenticateWithBiometrics({
+        promptMessage: `Enable ${label} for JMJ`,
+      });
+      if (ok) {
+        setBiometricsEnabled(true);
+        alertSuccess(`${label} enabled for quick unlock.`, 'Enabled');
+      }
+    } catch (error) {
+      setBiometricsEnabled(false);
+      alertError(error, 'Biometrics unavailable');
+    } finally {
+      setBioLoading(false);
+    }
+  }
+
   async function handleContinue() {
     if (!canContinue || loading) {
       return;
     }
 
     setLoading(true);
-    await submitSecureAccount({ pin, biometricsEnabled });
-    setLoading(false);
-    router.push('/onboarding/complete');
+    try {
+      await submitSecureAccount({ pin, biometricsEnabled });
+      alertSuccess('Your account is secured.', 'All set');
+      router.push('/onboarding/complete');
+    } catch (error) {
+      alertError(error, 'Could not secure account');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -49,7 +93,7 @@ export default function SecureAccountScreen() {
       }}
       footer={
         <Button
-          disabled={!canContinue}
+          disabled={!canContinue || bioLoading}
           label="Continue"
           loading={loading}
           onPress={handleContinue}
@@ -88,7 +132,7 @@ export default function SecureAccountScreen() {
           <NumericKeypad
             onDelete={handleDelete}
             onKeyPress={handleKeyPress}
-            onBiometricPress={() => setBiometricsEnabled(true)}
+            onBiometricPress={handleBiometricPress}
           />
         </View>
       </View>

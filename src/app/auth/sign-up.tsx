@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   View,
 } from 'react-native';
@@ -13,7 +14,8 @@ import { Button } from '@/components/ui/button';
 import { PhoneField } from '@/components/ui/phone-field';
 import { Screen } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
-import { checkEmailAvailability, submitSignUp } from '@/lib/mock-auth';
+import { checkEmailAvailability, submitSignUp } from '@/lib/auth';
+import { alertError, alertSuccess } from '@/lib/errors';
 import {
   getPasswordChecks,
   isPasswordValid,
@@ -59,18 +61,22 @@ export default function SignUpScreen() {
     setLoading(true);
     setEmailError(undefined);
 
-    const emailCheck = await checkEmailAvailability(email);
+    try {
+      const emailCheck = await checkEmailAvailability(email);
 
-    if (!emailCheck.available) {
-      setEmailError(emailCheck.message ?? 'Email address is already registered.');
+      if (!emailCheck.available) {
+        setEmailError(emailCheck.message ?? 'Email address is already registered.');
+        return;
+      }
+
+      await submitSignUp({ email, phone, password });
+      alertSuccess('Check your email for a verification code.', 'Account created');
+      router.push({ pathname: '/auth/verify-email', params: { email } });
+    } catch (error) {
+      alertError(error, 'Sign up failed');
+    } finally {
       setLoading(false);
-      return;
     }
-
-    await submitSignUp({ email, phone, password });
-
-    setLoading(false);
-    router.push({ pathname: '/auth/verify-email', params: { email } });
   }
 
   return (
@@ -80,7 +86,26 @@ export default function SignUpScreen() {
       onHelp={() => {
         // Help flow will be connected later.
       }}
-      footer={<Button disabled={!canContinue} label="Continue" loading={loading} onPress={handleContinue} />}>
+      footer={
+        <View className="gap-3">
+          <Button
+            disabled={!canContinue}
+            label="Continue"
+            loading={loading}
+            onPress={handleContinue}
+          />
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/auth/sign-in')}>
+            <ThemedText className="text-center font-geist-medium text-[14px] text-stone-body">
+              Already have an account?{' '}
+              <ThemedText className="font-geist-semibold text-stone-title">
+                Sign in
+              </ThemedText>
+            </ThemedText>
+          </Pressable>
+        </View>
+      }>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1">

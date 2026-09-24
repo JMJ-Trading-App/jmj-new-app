@@ -1,4 +1,5 @@
-import { router, type Href } from 'expo-router';
+import { router, useFocusEffect, type Href } from 'expo-router';
+import { useCallback, useMemo } from 'react';
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -7,13 +8,26 @@ import { MoreMenuSectionCard } from '@/components/more/more-menu-section';
 import { UpgradeBanner } from '@/components/more/upgrade-banner';
 import {
   MORE_APP_VERSION,
-  MORE_SECTIONS,
+  moreSectionsWithUser,
   type MoreMenuItem,
 } from '@/constants/more-data';
 import { BottomTabInset } from '@/constants/theme';
+import { useSession } from '@/hooks/use-session';
 
 export default function MoreScreen() {
   const insets = useSafeAreaInsets();
+  const { signOut, user, refreshUser } = useSession();
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshUser();
+    }, [refreshUser]),
+  );
+
+  const sections = useMemo(
+    () => moreSectionsWithUser(user?.kycStatus),
+    [user?.kycStatus],
+  );
 
   function handleItemPress(item: MoreMenuItem) {
     if (item.action === 'whatsapp') {
@@ -26,7 +40,8 @@ export default function MoreScreen() {
     }
   }
 
-  function handleLogout() {
+  async function handleLogout() {
+    await signOut();
     router.replace('/auth/sign-in' as Href);
   }
 
@@ -40,11 +55,11 @@ export default function MoreScreen() {
           paddingBottom: BottomTabInset + 24,
         }}
         showsVerticalScrollIndicator={false}>
-        <MoreHeader />
+        <MoreHeader planLabel={user?.planLabel} planTier={user?.planTier} />
 
         <UpgradeBanner onPress={() => router.push('/subscriptions' as Href)} />
 
-        {MORE_SECTIONS.map((section) => (
+        {sections.map((section) => (
           <MoreMenuSectionCard key={section.id} section={section} onItemPress={handleItemPress} />
         ))}
 

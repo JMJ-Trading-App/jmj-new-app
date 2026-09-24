@@ -49,3 +49,35 @@ export function getDefaultDateOfBirthPickerDate() {
 export function isCompleteDateOfBirth(value: string) {
   return parseDateOfBirth(value) !== null;
 }
+
+/** Convert DD/MM/YYYY UI value to ISO date (YYYY-MM-DD) for the API. */
+export function toIsoDateString(value: string) {
+  const date = parseDateOfBirth(value);
+  if (!date) {
+    throw new Error('Invalid date of birth');
+  }
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/** Convert API ISO / Date string to DD/MM/YYYY for form inputs. */
+export function formatDobInputFromIso(value: string | null | undefined) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return formatDateFromPicker(date);
+}
+
+/** Friendly display e.g. Jan 15, 1995 */
+export function formatDisplayDate(value: string | null | undefined) {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}

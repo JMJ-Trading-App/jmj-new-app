@@ -14,6 +14,7 @@ type KycFlowShellProps = {
   children: ReactNode;
   onNext?: () => void;
   nextDisabled?: boolean;
+  nextLoading?: boolean;
   nextLabel?: string;
   footer?: ReactNode;
 };
@@ -24,6 +25,7 @@ export function KycFlowShell({
   children,
   onNext,
   nextDisabled = false,
+  nextLoading = false,
   nextLabel = 'Continue',
   footer,
 }: KycFlowShellProps) {
@@ -59,7 +61,12 @@ export function KycFlowShell({
 
       <View className="px-5" style={{ paddingBottom: Math.max(insets.bottom, 24) }}>
         {footer ?? (
-          <Button disabled={nextDisabled} label={nextLabel} onPress={onNext} />
+          <Button
+            disabled={nextDisabled}
+            label={nextLabel}
+            loading={nextLoading}
+            onPress={onNext}
+          />
         )}
       </View>
     </View>

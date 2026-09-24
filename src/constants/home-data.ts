@@ -12,7 +12,7 @@ export type ActivityItem = {
   subtitle: string;
   amount: string;
   type: 'credit' | 'debit';
-  category: 'deposit' | 'withdrawal' | 'investment' | 'pool' | 'signal';
+  category: 'deposit' | 'withdrawal' | 'investment' | 'pool' | 'signal' | 'metatrader';
 };
 
 export const HOME_ACCOUNTS: AccountCard[] = [

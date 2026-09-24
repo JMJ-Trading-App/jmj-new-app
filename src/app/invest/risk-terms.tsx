@@ -6,15 +6,21 @@ import { InvestFlowShell } from '@/components/invest/invest-flow-shell';
 import { ProfitSplitCard } from '@/components/invest/profit-split-card';
 import { RiskLevelCard } from '@/components/invest/risk-level-card';
 import { RISK_LEVELS, type RiskLevelId } from '@/constants/invest-flow-data';
+import { getInvestDraft, setInvestRiskLevel } from '@/lib/invest-draft';
 
 export default function RiskTermsScreen() {
-  const [riskLevel, setRiskLevel] = useState<RiskLevelId>('moderate');
+  const [riskLevel, setRiskLevel] = useState<RiskLevelId>(
+    getInvestDraft().riskLevel,
+  );
 
   return (
     <InvestFlowShell
       title="Risk & Terms"
       step={1}
-      onNext={() => router.push('/invest/payout-account' as Href)}>
+      onNext={() => {
+        setInvestRiskLevel(riskLevel);
+        router.push('/invest/payout-account' as Href);
+      }}>
       <ScrollView
         className="flex-1"
         contentContainerClassName="gap-6 px-5 pb-6 pt-6"

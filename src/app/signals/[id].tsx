@@ -1,18 +1,61 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SignalSideBadge } from '@/components/signals/signal-card';
 import { SignalPriceRows } from '@/components/signals/signal-price-rows';
 import { SignalProgressTimeline } from '@/components/signals/signal-progress-timeline';
 import { Button } from '@/components/ui/button';
-import { getSignalById } from '@/constants/signals-data';
+import type { TradeSignal } from '@/constants/signals-data';
+import type { TradeSignalApi } from '@/lib/api/types';
+import { alertError } from '@/lib/errors';
+import { fetchSignal } from '@/lib/signals';
+
+function mapSignal(signal: TradeSignalApi): TradeSignal {
+  return {
+    id: signal.id,
+    asset: signal.asset,
+    side: signal.side,
+    status: signal.status,
+    entry: signal.entry,
+    takeProfit: signal.takeProfit,
+    stopLoss: signal.stopLoss,
+    note: signal.note,
+    meaning: signal.meaning,
+    releasedLabel: signal.releasedLabel,
+    progress: signal.progress,
+  };
+}
 
 export default function SignalDetailScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const signal = getSignalById(id ?? '');
+  const [signal, setSignal] = useState<TradeSignal | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    void (async () => {
+      if (!id) return;
+      try {
+        const result = await fetchSignal(id);
+        setSignal(mapSignal(result.signal));
+      } catch (error) {
+        alertError(error, 'Could not load signal');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <ActivityIndicator color="#C4A015" />
+      </View>
+    );
+  }
 
   if (!signal) {
     return (

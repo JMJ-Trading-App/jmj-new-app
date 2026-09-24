@@ -35,6 +35,17 @@ export function PayoutHubBankCard({ added, detail, onAdd }: PayoutHubBankCardPro
             </Text>
           ) : null}
         </View>
+
+        {onAdd ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Edit bank account"
+            onPress={onAdd}
+            className="rounded-[10px] bg-white px-3.5 py-2"
+            style={({ pressed }) => [pressed && { opacity: 0.85 }]}>
+            <Text className="font-geist-semibold text-[13px] text-stone-title">Edit</Text>
+          </Pressable>
+        ) : null}
       </View>
     );
   }
@@ -94,6 +105,17 @@ export function PayoutHubCryptoCard({ added, detail, onAdd }: PayoutHubCryptoCar
             {detail}
           </Text>
         </View>
+
+        {onAdd ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Edit crypto wallet"
+            onPress={onAdd}
+            className="rounded-[10px] bg-white px-3.5 py-2"
+            style={({ pressed }) => [pressed && { opacity: 0.85 }]}>
+            <Text className="font-geist-semibold text-[13px] text-stone-title">Edit</Text>
+          </Pressable>
+        ) : null}
       </View>
     );
   }

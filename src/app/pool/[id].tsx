@@ -1,13 +1,46 @@
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { Linking, Pressable, ScrollView, Share, Text, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Linking, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { WhatsAppIcon } from '@/components/invest/invest-flow-icons';
 import { CheckmarkBadgeIcon } from '@/components/pool/pool-icons';
 import { Button } from '@/components/ui/button';
-import { getPoolById, type PoolItem, type PoolStatus } from '@/constants/pool-data';
+import { type PoolItem, type PoolStatus } from '@/constants/pool-data';
+import type { PoolItemApi } from '@/lib/api/types';
 import { cn } from '@/lib/cn';
+import { alertError } from '@/lib/errors';
+import { fetchPool } from '@/lib/pool';
+import { resetPoolDraft, setPoolDraftPool } from '@/lib/pool-draft';
+
+function mapPool(pool: PoolItemApi): PoolItem {
+  return {
+    id: pool.id,
+    name: pool.name,
+    status: pool.status,
+    shortDescription: pool.shortDescription,
+    about: pool.about,
+    duration: pool.duration,
+    minContribution: pool.minContribution,
+    minContributionValue: pool.minContributionValue,
+    contributorsLabel: pool.contributorsLabel,
+    contributorsJoined: pool.contributorsJoined,
+    contributorsNeeded: pool.contributorsNeeded,
+    raisedLabel: pool.raisedLabel,
+    raisedProgress: pool.raisedProgress,
+    joinProgress: pool.joinProgress,
+    poolSize: pool.poolSize,
+    returns: pool.returns,
+    opensIn: pool.opensIn,
+    targetLabel: pool.targetLabel,
+    returnLabel: pool.returnLabel,
+    yourEarnings: pool.yourEarnings,
+    position: pool.position,
+    gains: pool.gains,
+    ctaLabel: pool.ctaLabel,
+  };
+}
 
 const STATUS_STYLES: Record<PoolStatus, { label: string; badge: string; text: string }> = {
   active: {
@@ -30,7 +63,33 @@ const STATUS_STYLES: Record<PoolStatus, { label: string; badge: string; text: st
 export default function PoolDetailScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const pool = getPoolById(id ?? 'alpha-growth');
+  const [pool, setPool] = useState<PoolItem | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    if (!id) return;
+    try {
+      const result = await fetchPool(id);
+      setPool(mapPool(result));
+    } catch (error) {
+      alertError(error, 'Could not load pool');
+      setPool(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  if (loading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white px-5">
+        <ActivityIndicator color="#C4A015" />
+      </View>
+    );
+  }
 
   if (!pool) {
     return (
@@ -383,6 +442,8 @@ function JoinablePoolDetail({ pool, bottomInset }: { pool: PoolItem; bottomInset
           label={pool.ctaLabel}
           onPress={() => {
             if (isJoinable) {
+              resetPoolDraft();
+              setPoolDraftPool(pool.id, pool.name);
               router.push(`/pool/join/${pool.id}` as Href);
             }
           }}

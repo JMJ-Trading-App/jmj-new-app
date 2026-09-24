@@ -28,6 +28,10 @@ const BADGE_STYLES: Record<MoreBadgeVariant, { container: string; text: string }
     container: 'bg-[#DCFCE7]',
     text: 'text-[#166534]',
   },
+  verified: {
+    container: 'bg-[#DCFCE7]',
+    text: 'text-[#166534]',
+  },
   status: {
     container: 'bg-transparent px-0',
     text: 'text-muted',

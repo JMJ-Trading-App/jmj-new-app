@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -11,30 +11,56 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { RankBadgeIcon } from '@/components/home/home-icons';
+import { RankBadgeIcon, type RankTier } from '@/components/home/home-icons';
 import { Button } from '@/components/ui/button';
 import { DateOfBirthField } from '@/components/ui/date-of-birth-field';
 import { PhoneField } from '@/components/ui/phone-field';
 import { TextField } from '@/components/ui/text-field';
-import { PROFILE } from '@/constants/profile-data';
-import { isCompleteDateOfBirth } from '@/lib/date-of-birth';
-import { getSignupFirstName, getSignupInitials, getSignupLastName } from '@/lib/mock-auth';
+import { useSession } from '@/hooks/use-session';
+import {
+  formatDobInputFromIso,
+  isCompleteDateOfBirth,
+  toIsoDateString,
+} from '@/lib/date-of-birth';
+import { alertError, alertSuccess } from '@/lib/errors';
+import { fetchProfile, updateProfile } from '@/lib/users';
+
+function asRankTier(tier?: string | null): RankTier {
+  if (tier === 'pro' || tier === 'vip' || tier === 'basic') return tier;
+  return 'basic';
+}
 
 export default function EditProfileScreen() {
   const insets = useSafeAreaInsets();
-  const [firstName, setFirstName] = useState(
-    getSignupFirstName() || PROFILE.fullName.split(' ')[0],
+  const { user } = useSession();
+  const [firstName, setFirstName] = useState(user?.firstName ?? '');
+  const [lastName, setLastName] = useState(user?.lastName ?? '');
+  const [email, setEmail] = useState(user?.email ?? '');
+  const [phone, setPhone] = useState(user?.phone ?? '');
+  const [dateOfBirth, setDateOfBirth] = useState(
+    formatDobInputFromIso(user?.dateOfBirth),
   );
-  const [lastName, setLastName] = useState(
-    getSignupLastName() || PROFILE.fullName.split(' ').slice(1).join(' '),
-  );
-  const [email, setEmail] = useState(PROFILE.email);
-  const [phone, setPhone] = useState('801 234 5678');
-  const [dateOfBirth, setDateOfBirth] = useState('15/01/1995');
-  const [country, setCountry] = useState('Nigeria');
+  const [country, setCountry] = useState(user?.country ?? 'Nigeria');
   const [saving, setSaving] = useState(false);
 
-  const initials = getSignupInitials() || PROFILE.initials;
+  useEffect(() => {
+    void (async () => {
+      try {
+        const profile = await fetchProfile();
+        setFirstName(profile.firstName ?? '');
+        setLastName(profile.lastName ?? '');
+        setEmail(profile.email ?? '');
+        setPhone(profile.phone ?? '');
+        setDateOfBirth(formatDobInputFromIso(profile.dateOfBirth));
+        setCountry(profile.country ?? 'Nigeria');
+      } catch (error) {
+        alertError(error, 'Could not load profile');
+      }
+    })();
+  }, []);
+
+  const initials = user?.initials || 'JM';
+  const planTier = asRankTier(user?.planTier);
 
   const canSave = useMemo(
     () =>
@@ -51,9 +77,22 @@ export default function EditProfileScreen() {
     if (!canSave || saving) return;
 
     setSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setSaving(false);
-    router.back();
+    try {
+      await updateProfile({
+        firstName,
+        lastName,
+        email,
+        phone,
+        dateOfBirth: toIsoDateString(dateOfBirth),
+        country,
+      });
+      alertSuccess('Your profile has been updated.', 'Saved');
+      router.back();
+    } catch (error) {
+      alertError(error, 'Could not save profile');
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -90,7 +129,7 @@ export default function EditProfileScreen() {
                 <Text className="font-geist-bold text-[28px] text-[#F5E8B0]">{initials}</Text>
               </View>
               <View className="absolute -right-0.5 -top-0.5 h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#E7E5E4]">
-                <RankBadgeIcon size={14} tier={PROFILE.planTier} />
+                <RankBadgeIcon size={14} tier={planTier} />
               </View>
               <Pressable
                 accessibilityRole="button"

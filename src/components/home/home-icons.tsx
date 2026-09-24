@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 type IconProps = {
@@ -39,24 +40,35 @@ export function EyeIcon({ color = '#FFFFFF', size = 20 }: IconProps) {
   );
 }
 
-export function TrendIcon({ color = '#166534', size = 14 }: IconProps) {
+export function TrendIcon({
+  color = '#166534',
+  size = 14,
+  direction = 'up',
+}: IconProps & { direction?: 'up' | 'down' }) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-      <Path
-        d="M2 11L5.5 7.5L8 10L14 4"
-        stroke={color}
-        strokeWidth={1.4}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <Path
-        d="M10.5 4H14V7.5"
-        stroke={color}
-        strokeWidth={1.4}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
+    <View
+      style={
+        direction === 'down'
+          ? { transform: [{ rotate: '180deg' }] }
+          : undefined
+      }>
+      <Svg width={size} height={size} viewBox="0 0 16 16" fill="none">
+        <Path
+          d="M2 11L5.5 7.5L8 10L14 4"
+          stroke={color}
+          strokeWidth={1.4}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <Path
+          d="M10.5 4H14V7.5"
+          stroke={color}
+          strokeWidth={1.4}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
+    </View>
   );
 }
 

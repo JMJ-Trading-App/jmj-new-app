@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/chip';
 import { Screen } from '@/components/ui/screen';
 import { SelectionCard } from '@/components/ui/selection-card';
-import { submitPreferences } from '@/lib/mock-auth';
+import { submitPreferences } from '@/lib/auth';
+import { alertError, alertSuccess } from '@/lib/errors';
 
 const TRADING_EXPERIENCE_OPTIONS = [
   { id: 'new', label: 'New to trading' },
@@ -48,9 +49,15 @@ export default function PreferencesScreen() {
     }
 
     setLoading(true);
-    await submitPreferences({ experience, interests });
-    setLoading(false);
-    router.push('/auth/secure-account');
+    try {
+      await submitPreferences({ experience, interests });
+      alertSuccess('Preferences saved.', 'Saved');
+      router.push('/auth/secure-account');
+    } catch (error) {
+      alertError(error, 'Could not save preferences');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

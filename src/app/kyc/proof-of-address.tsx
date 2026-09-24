@@ -10,9 +10,19 @@ import {
 import { DocumentTypePicker } from '@/components/kyc/document-type-picker';
 import { KycFlowShell } from '@/components/kyc/kyc-flow-shell';
 import { KYC_ADDRESS_DOCUMENT_TYPES, type KycDocumentType } from '@/constants/kyc-data';
+import { KycFlowGateLoading, useKycFlowGate } from '@/hooks/use-kyc-flow-gate';
 import { cn } from '@/lib/cn';
+import { alertError, alertSuccess } from '@/lib/errors';
+import {
+  getKycDraft,
+  isKycDraftReadyToSubmit,
+  resetKycDraft,
+  setKycAddressType,
+} from '@/lib/kyc-draft';
+import { submitKyc } from '@/lib/kyc';
 
 export default function KycProofOfAddressScreen() {
+  const gated = useKycFlowGate();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [file, setFile] = useState<AddressFileValue | null>(null);
@@ -25,17 +35,52 @@ export default function KycProofOfAddressScreen() {
 
   const canSubmit = Boolean(selected && file);
 
+  if (gated) return <KycFlowGateLoading />;
+
   async function handleSubmit() {
     if (!canSubmit || submitting) return;
 
     setSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setSubmitting(false);
-    router.replace('/kyc/submitted' as Href);
+    try {
+      const draft = getKycDraft();
+      if (!isKycDraftReadyToSubmit()) {
+        throw new Error(
+          'Please complete ID, selfie, and address uploads before submitting.',
+        );
+      }
+
+      const documents = [
+        draft.documents.ID_FRONT!,
+        draft.documents.ID_BACK!,
+        draft.documents.SELFIE!,
+        draft.documents.ADDRESS!,
+      ].map((doc) => ({
+        slot: doc.slot,
+        fileUrl: doc.fileUrl,
+        fileName: doc.fileName,
+        mimeType: doc.mimeType,
+        sizeBytes: doc.sizeBytes,
+      }));
+
+      await submitKyc({
+        identityDocumentType: draft.identityDocumentType!,
+        addressDocumentType: draft.addressDocumentType!,
+        documents,
+      });
+
+      resetKycDraft();
+      alertSuccess('We will notify you once review is complete.', 'KYC submitted');
+      router.replace('/kyc/submitted' as Href);
+    } catch (error) {
+      alertError(error, 'KYC submission failed');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function handleSelect(option: KycDocumentType) {
     setSelectedId(option.id);
+    setKycAddressType(option.id);
   }
 
   return (
@@ -43,7 +88,8 @@ export default function KycProofOfAddressScreen() {
       <KycFlowShell
         title="Proof of Address"
         step={3}
-        nextDisabled={!canSubmit}
+        nextDisabled={!canSubmit || submitting}
+        nextLoading={submitting}
         nextLabel="Submit for Review"
         onNext={handleSubmit}>
         <View className="gap-6">

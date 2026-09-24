@@ -12,8 +12,9 @@ import { Button } from '@/components/ui/button';
 import { DateOfBirthField } from '@/components/ui/date-of-birth-field';
 import { Screen } from '@/components/ui/screen';
 import { TextField } from '@/components/ui/text-field';
-import { isCompleteDateOfBirth } from '@/lib/date-of-birth';
-import { submitIdentity } from '@/lib/mock-auth';
+import { submitIdentity } from '@/lib/auth';
+import { isCompleteDateOfBirth, toIsoDateString } from '@/lib/date-of-birth';
+import { alertError, alertSuccess } from '@/lib/errors';
 
 export default function IdentityScreen() {
   const [firstName, setFirstName] = useState('');
@@ -35,13 +36,19 @@ export default function IdentityScreen() {
     }
 
     setLoading(true);
-    await submitIdentity({
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      dateOfBirth,
-    });
-    setLoading(false);
-    router.push('/auth/preferences');
+    try {
+      await submitIdentity({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        dateOfBirth: toIsoDateString(dateOfBirth),
+      });
+      alertSuccess('Identity saved.', 'Saved');
+      router.push('/auth/preferences');
+    } catch (error) {
+      alertError(error, 'Could not save identity');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

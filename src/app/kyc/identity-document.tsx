@@ -10,9 +10,12 @@ import {
 } from '@/components/kyc/document-upload-slot';
 import { KycFlowShell } from '@/components/kyc/kyc-flow-shell';
 import { KYC_DOCUMENT_TYPES, type KycDocumentType } from '@/constants/kyc-data';
+import { KycFlowGateLoading, useKycFlowGate } from '@/hooks/use-kyc-flow-gate';
 import { cn } from '@/lib/cn';
+import { setKycIdentityType } from '@/lib/kyc-draft';
 
 export default function KycIdentityDocumentScreen() {
+  const gated = useKycFlowGate();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [frontUpload, setFrontUpload] = useState<DocumentUploadValue | null>(null);
@@ -27,7 +30,10 @@ export default function KycIdentityDocumentScreen() {
 
   function handleSelect(option: KycDocumentType) {
     setSelectedId(option.id);
+    setKycIdentityType(option.id);
   }
+
+  if (gated) return <KycFlowGateLoading />;
 
   return (
     <>
@@ -70,12 +76,14 @@ export default function KycIdentityDocumentScreen() {
 
               <DocumentUploadSlot
                 label="Tap to upload front of ID"
+                slot="ID_FRONT"
                 value={frontUpload}
                 onChange={setFrontUpload}
               />
 
               <DocumentUploadSlot
                 label="Tap to upload back of ID"
+                slot="ID_BACK"
                 value={backUpload}
                 onChange={setBackUpload}
               />

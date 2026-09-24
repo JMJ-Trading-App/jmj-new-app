@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,19 @@ export default function OnboardingSetupScreen() {
     <Screen
       onBack={() => router.back()}
       footer={
-        <Button label="Get Started" onPress={() => router.push('/auth/sign-up')} />
+        <View className="gap-3">
+          <Button label="Get Started" onPress={() => router.push('/auth/sign-up')} />
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/auth/sign-in')}>
+            <ThemedText className="text-center font-geist-medium text-[14px] text-stone-body">
+              Already have an account?{' '}
+              <ThemedText className="font-geist-semibold text-stone-title">
+                Sign in
+              </ThemedText>
+            </ThemedText>
+          </Pressable>
+        </View>
       }>
       <View className="flex-1 items-center justify-center pb-8">
         <Image
