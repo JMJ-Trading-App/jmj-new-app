@@ -35,7 +35,7 @@ function buildApiUrl(path: string) {
 function networkErrorMessage(url: string, error: unknown) {
   const detail =
     error instanceof Error && error.message ? ` (${error.message})` : '';
-  return `Unable to reach the server at ${url}${detail}. If you're on a phone, set EXPO_PUBLIC_API_URL to your computer's LAN IP (not localhost) and restart Expo.`;
+  return `Unable to reach the server at ${url}${detail}. Check EXPO_PUBLIC_API_URL (currently ${API_BASE_URL}) and restart with npx expo start -c.`;
 }
 
 function parseResponseText(text: string) {

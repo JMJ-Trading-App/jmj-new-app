@@ -1,16 +1,33 @@
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 /**
- * Override with EXPO_PUBLIC_API_URL in `.env`.
- * Android emulator → host machine: http://10.0.2.2:3000/v1
- * Physical device → your LAN IP, e.g. http://192.168.x.x:3000/v1
- * Production → https://api.jmj.finance/v1
+ * API base URL (include /v1).
+ *
+ * Priority:
+ * 1. EXPO_PUBLIC_API_URL (Metro / EAS env)
+ * 2. app.config.js → extra.apiUrl (baked into the binary)
+ * 3. Production default
+ *
+ * Local Nest override in `.env`:
+ *   EXPO_PUBLIC_API_URL=http://192.168.x.x:3000/v1
  */
-const DEFAULT_API_URL =
-  Platform.OS === 'android'
-    ? 'http://10.0.2.2:3000/v1'
-    : 'http://localhost:3000/v1';
+const PRODUCTION_API_URL = 'https://api.jmj.finance/v1';
 
-export const API_BASE_URL = (
-  process.env.EXPO_PUBLIC_API_URL?.trim() || DEFAULT_API_URL
-).replace(/\/$/, '');
+const fromEnv = process.env.EXPO_PUBLIC_API_URL?.trim();
+const fromExtra = (
+  Constants.expoConfig?.extra as { apiUrl?: string } | undefined
+)?.apiUrl?.trim();
+
+const resolved = fromEnv || fromExtra || PRODUCTION_API_URL;
+
+export const API_BASE_URL = resolved.replace(/\/$/, '');
+
+if (__DEV__) {
+  // Helps confirm which host a development build is talking to.
+  // eslint-disable-next-line no-console
+  console.log(
+    `[api] ${Platform.OS} → ${API_BASE_URL}` +
+      (fromEnv ? ' (EXPO_PUBLIC_API_URL)' : fromExtra ? ' (app.config extra)' : ' (default)'),
+  );
+}

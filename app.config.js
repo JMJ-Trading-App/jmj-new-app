@@ -90,6 +90,8 @@ module.exports = {
   ],
 
   extra: {
+    apiUrl:
+      process.env.EXPO_PUBLIC_API_URL?.trim() || 'https://api.jmj.finance/v1',
     eas: {
       projectId: '2f34847e-ce67-4a47-ae0c-59255c70c787',
     },
