@@ -1,4 +1,5 @@
 import { apiRequest } from '@/lib/api/client';
+import type { AccountCard } from '@/constants/home-data';
 
 export type ActivityItem = {
   id: string;
@@ -11,17 +12,37 @@ export type ActivityItem = {
   href?: string | null;
 };
 
-export async function fetchRecentActivity(
-  take = 20,
-  category?: 'metatrader' | 'all',
-) {
+export type AccountBalanceCard = AccountCard & {
+  balanceValue?: number;
+  monthlyPercent?: number;
+  currency?: string;
+  linked?: boolean;
+};
+
+export async function fetchRecentActivity(take = 20) {
   const params = new URLSearchParams();
   params.set('take', String(take));
-  if (category && category !== 'all') {
-    params.set('category', category);
-  }
   return apiRequest<{ activities: ActivityItem[]; count: number }>(
     `/activity/recent?${params.toString()}`,
     { auth: true },
   );
+}
+
+export async function fetchAccountBalances() {
+  return apiRequest<{ accounts: AccountBalanceCard[] }>('/activity/balances', {
+    auth: true,
+  });
+}
+
+/** Best-effort MetaTrader sync (balance + deals). Ignores failures when not linked. */
+export async function syncMetaTraderAccount() {
+  return apiRequest<{
+    message: string;
+    upserted?: number;
+    balance?: number | null;
+    equity?: number | null;
+  }>('/metatrader/me/sync', {
+    method: 'POST',
+    auth: true,
+  });
 }

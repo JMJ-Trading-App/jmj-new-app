@@ -20,14 +20,14 @@ export const HOME_ACCOUNTS: AccountCard[] = [
     id: 'individual',
     label: 'Individual Account',
     balance: '$0.00',
-    monthlyChange: '$0.00 this month',
+    monthlyChange: '0.0% this month',
     monthlyPositive: true,
   },
   {
     id: 'pool',
     label: 'Pool Account',
-    balance: '$1,250.00',
-    monthlyChange: '+$120.00 this month',
+    balance: '$0.00',
+    monthlyChange: '0.0% this month',
     monthlyPositive: true,
   },
 ];

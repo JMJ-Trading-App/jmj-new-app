@@ -13,7 +13,12 @@ import type { ActivityItem } from '@/lib/activity';
 import { BottomTabInset } from '@/constants/theme';
 import { REFRESH_CONTROL_PROPS } from '@/constants/refresh';
 import { useSession } from '@/hooks/use-session';
-import { fetchRecentActivity } from '@/lib/activity';
+import {
+  fetchAccountBalances,
+  fetchRecentActivity,
+  syncMetaTraderAccount,
+  type AccountBalanceCard,
+} from '@/lib/activity';
 import { fetchUnreadNotificationCount } from '@/lib/notifications';
 
 export default function HomeScreen() {
@@ -23,16 +28,35 @@ export default function HomeScreen() {
   const initials = user?.initials || 'JM';
   const [unreadCount, setUnreadCount] = useState(0);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [accounts, setAccounts] = useState<AccountBalanceCard[]>(HOME_ACCOUNTS);
   const [refreshing, setRefreshing] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (opts?: { syncMt?: boolean }) => {
     await refreshUser();
-    const [unread, activity] = await Promise.all([
+    if (opts?.syncMt) {
+      await syncMetaTraderAccount().catch(() => null);
+    }
+    const [unread, activity, balances] = await Promise.all([
       fetchUnreadNotificationCount().catch(() => ({ unreadCount: 0 })),
       fetchRecentActivity(8).catch(() => ({ activities: [] as ActivityItem[] })),
+      fetchAccountBalances().catch(() => ({ accounts: HOME_ACCOUNTS })),
     ]);
     setUnreadCount(unread.unreadCount);
     setActivities(activity.activities);
+    if (balances.accounts?.length) {
+      setAccounts(balances.accounts);
+    }
+    // Background refresh of MT balance/deals after first paint
+    if (!opts?.syncMt) {
+      void syncMetaTraderAccount()
+        .then(() => fetchAccountBalances())
+        .then((next) => {
+          if (next.accounts?.length) setAccounts(next.accounts);
+          return fetchRecentActivity(8);
+        })
+        .then((activityNext) => setActivities(activityNext.activities))
+        .catch(() => null);
+    }
   }, [refreshUser]);
 
   useFocusEffect(
@@ -56,7 +80,7 @@ export default function HomeScreen() {
             refreshing={refreshing}
             onRefresh={() => {
               setRefreshing(true);
-              void load().finally(() => setRefreshing(false));
+              void load({ syncMt: true }).finally(() => setRefreshing(false));
             }}
             {...REFRESH_CONTROL_PROPS}
           />
@@ -71,7 +95,7 @@ export default function HomeScreen() {
           />
         </View>
 
-        <AccountBalanceCarousel accounts={HOME_ACCOUNTS} />
+        <AccountBalanceCarousel accounts={accounts} />
 
         <View className="gap-5 px-5">
           <SetupBanner
@@ -100,6 +124,7 @@ export default function HomeScreen() {
           />
           <RecentActivities
             activities={activities}
+            title="Recent Activity"
             onViewAllPress={() => router.push('/activity' as Href)}
             onItemPress={(item) => {
               if (item.href) router.push(item.href as Href);

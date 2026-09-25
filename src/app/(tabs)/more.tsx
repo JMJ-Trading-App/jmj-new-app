@@ -21,16 +21,19 @@ import {
 import { BottomTabInset } from '@/constants/theme';
 import { REFRESH_CONTROL_PROPS } from '@/constants/refresh';
 import { useSession } from '@/hooks/use-session';
+import { useSupportSettings } from '@/hooks/use-support-settings';
 
 export default function MoreScreen() {
   const insets = useSafeAreaInsets();
   const { signOut, user, refreshUser } = useSession();
+  const { settings, reload: reloadSupport } = useSupportSettings();
   const [refreshing, setRefreshing] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       void refreshUser();
-    }, [refreshUser]),
+      void reloadSupport(true);
+    }, [refreshUser, reloadSupport]),
   );
 
   const sections = useMemo(
@@ -40,7 +43,17 @@ export default function MoreScreen() {
 
   function handleItemPress(item: MoreMenuItem) {
     if (item.action === 'whatsapp') {
-      void Linking.openURL('https://wa.me/');
+      void Linking.openURL(settings.whatsappUrl);
+      return;
+    }
+
+    if (item.id === 'terms' && settings.termsUrl) {
+      void Linking.openURL(settings.termsUrl);
+      return;
+    }
+
+    if (item.id === 'privacy' && settings.privacyUrl) {
+      void Linking.openURL(settings.privacyUrl);
       return;
     }
 
@@ -69,7 +82,9 @@ export default function MoreScreen() {
             refreshing={refreshing}
             onRefresh={() => {
               setRefreshing(true);
-              void refreshUser().finally(() => setRefreshing(false));
+              void Promise.all([refreshUser(), reloadSupport(true)]).finally(
+                () => setRefreshing(false),
+              );
             }}
             {...REFRESH_CONTROL_PROPS}
           />

@@ -13,7 +13,9 @@ import {
   HelpXIcon,
 } from '@/components/more/help-center-icons';
 import { MenuChevronIcon } from '@/components/more/more-icons';
-import { HELP_CENTER_ITEMS, type HelpCenterItem } from '@/constants/help-center-data';
+import type { HelpCenterItem } from '@/constants/help-center-data';
+import { useSupportSettings } from '@/hooks/use-support-settings';
+import { helpCenterItemsFromSettings } from '@/lib/support';
 
 function ItemIcon({ item }: { item: HelpCenterItem }) {
   switch (item.icon) {
@@ -52,6 +54,8 @@ function openItem(item: HelpCenterItem) {
 
 export default function HelpCenterScreen() {
   const insets = useSafeAreaInsets();
+  const { settings } = useSupportSettings();
+  const items = helpCenterItemsFromSettings(settings);
 
   return (
     <View className="flex-1 bg-[#F7F7F5]">
@@ -75,7 +79,7 @@ export default function HelpCenterScreen() {
         className="flex-1"
         contentContainerClassName="gap-3 px-5 pb-8"
         showsVerticalScrollIndicator={false}>
-        {HELP_CENTER_ITEMS.map((item) => (
+        {items.map((item) => (
           <Pressable
             key={item.id}
             accessibilityRole="button"

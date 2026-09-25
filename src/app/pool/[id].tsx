@@ -13,6 +13,7 @@ import { cn } from '@/lib/cn';
 import { alertError } from '@/lib/errors';
 import { fetchPool } from '@/lib/pool';
 import { resetPoolDraft, setPoolDraftPool } from '@/lib/pool-draft';
+import { useSupportSettings } from '@/hooks/use-support-settings';
 
 function mapPool(pool: PoolItemApi): PoolItem {
   return {
@@ -62,6 +63,7 @@ const STATUS_STYLES: Record<PoolStatus, { label: string; badge: string; text: st
 
 export default function PoolDetailScreen() {
   const insets = useSafeAreaInsets();
+  const { settings } = useSupportSettings();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [pool, setPool] = useState<PoolItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -152,7 +154,11 @@ export default function PoolDetailScreen() {
       {isCompleted && pool.position ? (
         <CompletedPoolDetail pool={pool} bottomInset={insets.bottom} />
       ) : hasPosition && pool.position ? (
-        <ActiveMemberPoolDetail pool={pool} bottomInset={insets.bottom} />
+        <ActiveMemberPoolDetail
+          pool={pool}
+          bottomInset={insets.bottom}
+          whatsappUrl={settings.whatsappUrl}
+        />
       ) : (
         <JoinablePoolDetail pool={pool} bottomInset={insets.bottom} />
       )}
@@ -247,7 +253,15 @@ function CompletedPoolDetail({ pool, bottomInset }: { pool: PoolItem; bottomInse
   );
 }
 
-function ActiveMemberPoolDetail({ pool, bottomInset }: { pool: PoolItem; bottomInset: number }) {
+function ActiveMemberPoolDetail({
+  pool,
+  bottomInset,
+  whatsappUrl,
+}: {
+  pool: PoolItem;
+  bottomInset: number;
+  whatsappUrl: string;
+}) {
   const status = STATUS_STYLES[pool.status];
   const position = pool.position!;
 
@@ -347,7 +361,7 @@ function ActiveMemberPoolDetail({ pool, bottomInset }: { pool: PoolItem; bottomI
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Follow up on WhatsApp"
-          onPress={() => Linking.openURL('https://wa.me/')}
+          onPress={() => Linking.openURL(whatsappUrl)}
           className="flex-row items-center justify-center gap-2 rounded-[14px] border border-[#B7E4C7] bg-[#E8F8F0] py-[16px]"
           style={({ pressed }) => [pressed && { opacity: 0.9 }]}>
           <WhatsAppIcon />

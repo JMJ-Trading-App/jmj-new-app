@@ -10,6 +10,7 @@ import {
 } from '@/components/invest/invest-flow-icons';
 import { cn } from '@/lib/cn';
 import { getPoolDraft } from '@/lib/pool-draft';
+import { useSupportSettings } from '@/hooks/use-support-settings';
 
 const STATUS_STEPS = [
   { id: 'submitted', title: 'Payment Submitted', subtitle: 'Completed', state: 'done' },
@@ -19,6 +20,7 @@ const STATUS_STEPS = [
 
 export default function PoolStatusScreen() {
   const insets = useSafeAreaInsets();
+  const { settings } = useSupportSettings();
   const draft = getPoolDraft();
   const serviceCharge = draft.serviceCharge ?? 'your';
   const poolName = draft.poolName ?? 'this pool';
@@ -112,7 +114,7 @@ export default function PoolStatusScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Follow up on WhatsApp"
-          onPress={() => Linking.openURL('https://wa.me/')}
+          onPress={() => Linking.openURL(settings.whatsappUrl)}
           className="flex-row items-center justify-center gap-2 rounded-[14px] bg-[#E8F8F0] py-[16px]"
           style={({ pressed }) => [pressed && { opacity: 0.9 }]}>
           <WhatsAppIcon />

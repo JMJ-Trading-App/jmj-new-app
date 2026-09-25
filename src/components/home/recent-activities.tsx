@@ -73,7 +73,9 @@ export function RecentActivities({
         <View className="items-center gap-3 py-8">
           <EmptyActivityIcon />
           <Text className="font-geist-semibold text-base text-stone-title">No activity yet</Text>
-          <Text className="font-geist text-sm text-muted">Your transactions will appear here.</Text>
+          <Text className="font-geist text-sm text-muted">
+            MetaTrader trades will appear here after sync.
+          </Text>
         </View>
       ) : (
         <View className="gap-2">

@@ -7,9 +7,11 @@ import {
   SuccessCheckBadge,
   WhatsAppIcon,
 } from '@/components/invest/invest-flow-icons';
+import { useSupportSettings } from '@/hooks/use-support-settings';
 
 export default function KycSubmittedScreen() {
   const insets = useSafeAreaInsets();
+  const { settings } = useSupportSettings();
 
   function goHome() {
     router.replace('/(tabs)/home' as Href);
@@ -45,7 +47,7 @@ export default function KycSubmittedScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Follow up on WhatsApp"
-          onPress={() => Linking.openURL('https://wa.me/')}
+          onPress={() => Linking.openURL(settings.whatsappUrl)}
           className="flex-row items-center justify-center gap-2 rounded-[14px] border border-[#B7E4C7] bg-[#E8F8F0] py-[16px]"
           style={({ pressed }) => [pressed && { opacity: 0.9 }]}>
           <WhatsAppIcon />
