@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -23,6 +24,7 @@ import {
   type SignalsTab,
   type TradeSignal,
 } from '@/constants/signals-data';
+import { REFRESH_CONTROL_PROPS } from '@/constants/refresh';
 import type { TradeSignalApi } from '@/lib/api/types';
 import { alertError } from '@/lib/errors';
 import { fetchSignals } from '@/lib/signals';
@@ -48,13 +50,15 @@ export default function SignalsScreen() {
   const params = useLocalSearchParams<{ status?: string }>();
   const [tab, setTab] = useState<SignalsTab>('active');
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [accessStatus, setAccessStatus] = useState<SignalsAccessStatus>('ended');
   const [planSummary, setPlanSummary] = useState<string | null>(null);
   const [insight, setInsight] = useState({ hit: 0, total: 0 });
   const [active, setActive] = useState<TradeSignal[]>([]);
   const [history, setHistory] = useState<TradeSignal[]>([]);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (opts?: { quiet?: boolean }) => {
+    if (!opts?.quiet) setLoading(true);
     try {
       const result = await fetchSignals();
       const forced =
@@ -70,6 +74,7 @@ export default function SignalsScreen() {
       alertError(error, 'Could not load signals');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [params.status]);
 
@@ -111,7 +116,17 @@ export default function SignalsScreen() {
         <ScrollView
           className="flex-1"
           contentContainerClassName="gap-5 px-5 pb-6 pt-2"
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => {
+                setRefreshing(true);
+                void load({ quiet: true });
+              }}
+              {...REFRESH_CONTROL_PROPS}
+            />
+          }>
           <SignalsPlanBanner
             summary={planSummary ?? undefined}
             onManage={() => router.push('/signals/plan' as Href)}

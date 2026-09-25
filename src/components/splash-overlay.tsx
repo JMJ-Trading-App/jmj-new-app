@@ -1,7 +1,13 @@
 import { Image } from 'expo-image';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
-import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { StyleSheet } from 'react-native';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 export const SplashColors = {
   yellow: '#F5C518',
@@ -42,13 +48,24 @@ export function SplashOverlay({ ready }: SplashOverlayProps) {
   return (
     <Animated.View
       pointerEvents={ready ? 'none' : 'auto'}
-      className="absolute inset-0 z-[1000] bg-brand"
-      style={animatedStyle}>
+      style={[styles.overlay, animatedStyle]}>
       <Image
         source={require('@/assets/images/splash-screen.png')}
-        style={{ width: '100%', height: '100%' }}
+        style={styles.image}
         contentFit="cover"
       />
     </Animated.View>
   );
 }
+
+const styles = StyleSheet.create({
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1000,
+    backgroundColor: SplashColors.yellow,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+});

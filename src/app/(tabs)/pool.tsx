@@ -1,7 +1,13 @@
 import { useFocusEffect } from 'expo-router';
 import { router, type Href } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PoolCard } from '@/components/pool/pool-card';
@@ -16,6 +22,7 @@ import {
   type PoolSummary,
 } from '@/constants/pool-data';
 import { BottomTabInset } from '@/constants/theme';
+import { REFRESH_CONTROL_PROPS } from '@/constants/refresh';
 import type { PoolItemApi } from '@/lib/api/types';
 import { alertError } from '@/lib/errors';
 import { fetchPools } from '@/lib/pool';
@@ -61,10 +68,12 @@ export default function PoolScreen() {
   const [filter, setFilter] = useState<PoolFilter>('all');
   const [helpOpen, setHelpOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [summary, setSummary] = useState<PoolSummary>(EMPTY_SUMMARY);
   const [pools, setPools] = useState<PoolItem[]>([]);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (opts?: { quiet?: boolean }) => {
+    if (!opts?.quiet) setLoading(true);
     try {
       const result = await fetchPools();
       setSummary({
@@ -79,6 +88,7 @@ export default function PoolScreen() {
       alertError(error, 'Could not load pools');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
@@ -106,7 +116,17 @@ export default function PoolScreen() {
           paddingTop: insets.top + 8,
           paddingBottom: BottomTabInset + 16,
         }}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              void load({ quiet: true });
+            }}
+            {...REFRESH_CONTROL_PROPS}
+          />
+        }>
         <PoolHeader onHelpPress={() => setHelpOpen(true)} />
 
         <PoolSummaryCard summary={summary} />

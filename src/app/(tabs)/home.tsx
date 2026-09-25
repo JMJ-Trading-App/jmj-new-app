@@ -1,6 +1,6 @@
 import { router, useFocusEffect, type Href } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { RefreshControl, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AccountBalanceCarousel } from '@/components/home/account-balance-card';
@@ -11,6 +11,7 @@ import { SetupBanner } from '@/components/home/setup-banner';
 import { HOME_ACCOUNTS } from '@/constants/home-data';
 import type { ActivityItem } from '@/lib/activity';
 import { BottomTabInset } from '@/constants/theme';
+import { REFRESH_CONTROL_PROPS } from '@/constants/refresh';
 import { useSession } from '@/hooks/use-session';
 import { fetchRecentActivity } from '@/lib/activity';
 import { fetchUnreadNotificationCount } from '@/lib/notifications';
@@ -22,17 +23,22 @@ export default function HomeScreen() {
   const initials = user?.initials || 'JM';
   const [unreadCount, setUnreadCount] = useState(0);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    await refreshUser();
+    const [unread, activity] = await Promise.all([
+      fetchUnreadNotificationCount().catch(() => ({ unreadCount: 0 })),
+      fetchRecentActivity(8).catch(() => ({ activities: [] as ActivityItem[] })),
+    ]);
+    setUnreadCount(unread.unreadCount);
+    setActivities(activity.activities);
+  }, [refreshUser]);
 
   useFocusEffect(
     useCallback(() => {
-      void refreshUser();
-      void fetchUnreadNotificationCount()
-        .then((result) => setUnreadCount(result.unreadCount))
-        .catch(() => undefined);
-      void fetchRecentActivity(8)
-        .then((result) => setActivities(result.activities))
-        .catch(() => setActivities([]));
-    }, [refreshUser]),
+      void load();
+    }, [load]),
   );
 
   return (
@@ -44,7 +50,17 @@ export default function HomeScreen() {
           paddingTop: insets.top + 8,
           paddingBottom: BottomTabInset + 16,
         }}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              void load().finally(() => setRefreshing(false));
+            }}
+            {...REFRESH_CONTROL_PROPS}
+          />
+        }>
         <View className="px-5">
           <HomeHeader
             firstName={firstName}

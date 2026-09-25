@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -14,6 +15,7 @@ import { RecentActivities } from '@/components/home/recent-activities';
 import { cn } from '@/lib/cn';
 import { fetchRecentActivity, type ActivityItem } from '@/lib/activity';
 import { alertError } from '@/lib/errors';
+import { REFRESH_CONTROL_PROPS } from '@/constants/refresh';
 
 const FILTERS = [
   { id: 'all' as const, label: 'All' },
@@ -34,6 +36,7 @@ export default function ActivityScreen() {
   const [filter, setFilter] = useState<FilterId>('all');
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const filterRef = useRef(filter);
   const requestIdRef = useRef(0);
   const skipFilterFetchRef = useRef(true);
@@ -42,9 +45,9 @@ export default function ActivityScreen() {
     filterRef.current = filter;
   }, [filter]);
 
-  const load = useCallback(async (nextFilter: FilterId) => {
+  const load = useCallback(async (nextFilter: FilterId, opts?: { quiet?: boolean }) => {
     const requestId = ++requestIdRef.current;
-    setLoading(true);
+    if (!opts?.quiet) setLoading(true);
     try {
       const result = await fetchRecentActivity(50, nextFilter);
       // Drop stale responses so an older "All" fetch can't overwrite MetaTrader.
@@ -58,6 +61,7 @@ export default function ActivityScreen() {
     } finally {
       if (requestId === requestIdRef.current) {
         setLoading(false);
+        setRefreshing(false);
       }
     }
   }, []);
@@ -140,7 +144,17 @@ export default function ActivityScreen() {
         <ScrollView
           className="flex-1"
           contentContainerClassName="gap-5 px-5 pb-10 pt-5"
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => {
+                setRefreshing(true);
+                void load(filterRef.current, { quiet: true });
+              }}
+              {...REFRESH_CONTROL_PROPS}
+            />
+          }>
           {loading ? (
             <View className="items-center py-2">
               <ActivityIndicator color="#C4A015" />

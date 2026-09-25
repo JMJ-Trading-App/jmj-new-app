@@ -16,12 +16,16 @@ import { hydrateSession } from '@/lib/session';
 
 import '@/global.css';
 
-SplashScreen.preventAutoHideAsync();
+void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
-SplashScreen.setOptions({
-  duration: 400,
-  fade: true,
-});
+try {
+  SplashScreen.setOptions({
+    duration: 400,
+    fade: true,
+  });
+} catch {
+  // Some Android release builds reject setOptions during early init.
+}
 
 function PushRegistration() {
   const { isAuthenticated, hydrated } = useSession();

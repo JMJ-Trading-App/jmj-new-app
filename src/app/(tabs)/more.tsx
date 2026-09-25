@@ -1,6 +1,13 @@
 import { router, useFocusEffect, type Href } from 'expo-router';
-import { useCallback, useMemo } from 'react';
-import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import {
+  Linking,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MoreHeader } from '@/components/more/more-header';
@@ -12,11 +19,13 @@ import {
   type MoreMenuItem,
 } from '@/constants/more-data';
 import { BottomTabInset } from '@/constants/theme';
+import { REFRESH_CONTROL_PROPS } from '@/constants/refresh';
 import { useSession } from '@/hooks/use-session';
 
 export default function MoreScreen() {
   const insets = useSafeAreaInsets();
   const { signOut, user, refreshUser } = useSession();
+  const [refreshing, setRefreshing] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -54,7 +63,17 @@ export default function MoreScreen() {
           paddingTop: insets.top + 8,
           paddingBottom: BottomTabInset + 24,
         }}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              void refreshUser().finally(() => setRefreshing(false));
+            }}
+            {...REFRESH_CONTROL_PROPS}
+          />
+        }>
         <MoreHeader planLabel={user?.planLabel} planTier={user?.planTier} />
 
         <UpgradeBanner onPress={() => router.push('/subscriptions' as Href)} />

@@ -1,7 +1,13 @@
 import { useFocusEffect } from 'expo-router';
 import { router, type Href } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { InvestEmptyState } from '@/components/invest/invest-empty-state';
@@ -16,6 +22,7 @@ import {
   type PortfolioSummary,
 } from '@/constants/invest-data';
 import { BottomTabInset } from '@/constants/theme';
+import { REFRESH_CONTROL_PROPS } from '@/constants/refresh';
 import type { InvestmentItemApi } from '@/lib/api/types';
 import { alertError } from '@/lib/errors';
 import { resetInvestDraft } from '@/lib/invest-draft';
@@ -51,10 +58,12 @@ export default function InvestScreen() {
   const [filter, setFilter] = useState<InvestFilter>('all');
   const [helpOpen, setHelpOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [portfolio, setPortfolio] = useState<PortfolioSummary>(EMPTY_PORTFOLIO);
   const [investments, setInvestments] = useState<InvestmentItem[]>([]);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (opts?: { quiet?: boolean }) => {
+    if (!opts?.quiet) setLoading(true);
     try {
       const result = await fetchInvestPortfolio();
       setPortfolio({
@@ -69,6 +78,7 @@ export default function InvestScreen() {
       alertError(error, 'Could not load investments');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
@@ -92,7 +102,17 @@ export default function InvestScreen() {
           paddingTop: insets.top + 8,
           paddingBottom: BottomTabInset + 16,
         }}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              void load({ quiet: true });
+            }}
+            {...REFRESH_CONTROL_PROPS}
+          />
+        }>
         <InvestHeader onHelpPress={() => setHelpOpen(true)} />
 
         <PortfolioSummaryCard

@@ -5,16 +5,25 @@ import { Platform } from 'react-native';
 
 import { registerPushToken, unregisterPushToken } from '@/lib/push';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
-
+let handlerConfigured = false;
 let currentToken: string | null = null;
+
+function ensureNotificationHandler() {
+  if (handlerConfigured) return;
+  handlerConfigured = true;
+  try {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+      }),
+    });
+  } catch {
+    // Ignore — handler is optional for cold start stability.
+  }
+}
 
 function resolveProjectId() {
   return (
@@ -29,35 +38,40 @@ export async function syncPushRegistration() {
   if (Platform.OS === 'web') return null;
   if (!Device.isDevice) return null;
 
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#F5C518',
-    });
-  }
+  ensureNotificationHandler();
 
-  const existing = await Notifications.getPermissionsAsync();
-  let status = existing.status;
-  if (status !== 'granted') {
-    const requested = await Notifications.requestPermissionsAsync();
-    status = requested.status;
-  }
-  if (status !== 'granted') return null;
+  try {
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#F5C518',
+      });
+    }
 
-  const projectId = resolveProjectId();
-  if (!projectId) {
-    // Dev without EAS projectId — skip quietly
+    const existing = await Notifications.getPermissionsAsync();
+    let status = existing.status;
+    if (status !== 'granted') {
+      const requested = await Notifications.requestPermissionsAsync();
+      status = requested.status;
+    }
+    if (status !== 'granted') return null;
+
+    const projectId = resolveProjectId();
+    if (!projectId) {
+      return null;
+    }
+
+    const tokenResult = await Notifications.getExpoPushTokenAsync({ projectId });
+    const token = tokenResult.data;
+    currentToken = token;
+
+    await registerPushToken(token, Platform.OS);
+    return token;
+  } catch {
     return null;
   }
-
-  const tokenResult = await Notifications.getExpoPushTokenAsync({ projectId });
-  const token = tokenResult.data;
-  currentToken = token;
-
-  await registerPushToken(token, Platform.OS);
-  return token;
 }
 
 export async function clearPushRegistration() {

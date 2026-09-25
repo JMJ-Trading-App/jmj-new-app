@@ -11,7 +11,7 @@ const env = {
 module.exports = {
   name: env.appName,
   slug: env.appSlug,
-  version: '1.0.1',
+  version: '1.2.1',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: env.scheme,
@@ -21,25 +21,26 @@ module.exports = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: env.iosBundleId,
-    icon: './assets/expo.icon',
+    icon: './assets/images/icon.png',
     infoPlist: {
       NSFaceIDUsageDescription:
         'Use Face ID to securely unlock your JMJ account without typing your PIN.',
       UIBackgroundModes: ['remote-notification'],
+      // HTTPS + OS Keychain/Keystore + SHA-256 PIN hash only — no non-exempt crypto
+      ITSAppUsesNonExemptEncryption: false,
     },
   },
 
   android: {
     package: env.androidPackage,
-    versionCode: 6,
+    versionCode: 8,
     // Local Nest API over HTTP (LAN / emulator). Prefer HTTPS in store builds.
     usesCleartextTraffic: true,
     googleServicesFile:
       process.env.GOOGLE_SERVICES_JSON || './google-services.json',
     adaptiveIcon: {
       backgroundColor: '#F5C518',
-      foregroundImage: './assets/images/android-icon-foreground.png',
-      backgroundImage: './assets/images/android-icon-background.png',
+      foregroundImage: './assets/images/icon.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
     },
     predictiveBackGestureEnabled: false,
@@ -84,7 +85,8 @@ module.exports = {
       {
         color: '#F5C518',
         defaultChannel: 'default',
-        icon: './assets/images/android-icon-monochrome.png',
+        // Must be white silhouette on transparent (Android guideline)
+        icon: './assets/images/notification-icon.png',
       },
     ],
   ],

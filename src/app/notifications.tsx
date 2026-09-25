@@ -1,9 +1,10 @@
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -20,6 +21,7 @@ import {
   type NotificationFilterId,
   type NotificationItem,
 } from '@/constants/notifications-data';
+import { REFRESH_CONTROL_PROPS } from '@/constants/refresh';
 import type { NotificationItemApi } from '@/lib/api/types';
 import { alertError } from '@/lib/errors';
 import {
@@ -38,6 +40,7 @@ function mapItem(item: NotificationItemApi): NotificationItem {
     unread: item.unread,
     icon: item.icon,
     section: item.section,
+    href: item.href,
   };
 }
 
@@ -46,8 +49,10 @@ export default function NotificationsScreen() {
   const [filter, setFilter] = useState<NotificationFilterId>('all');
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (opts?: { quiet?: boolean }) => {
+    if (!opts?.quiet) setLoading(true);
     try {
       const result = await fetchNotifications();
       setItems(result.notifications.map(mapItem));
@@ -55,6 +60,7 @@ export default function NotificationsScreen() {
       alertError(error, 'Could not load notifications');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
@@ -83,18 +89,21 @@ export default function NotificationsScreen() {
     }
   }
 
-  async function markOneRead(item: NotificationItem) {
-    if (!item.unread) return;
-    setItems((current) =>
-      current.map((entry) =>
-        entry.id === item.id ? { ...entry, unread: false } : entry,
-      ),
-    );
-    try {
-      await markNotificationRead(item.id);
-    } catch (error) {
-      alertError(error, 'Could not mark as read');
-      void load();
+  async function openItem(item: NotificationItem) {
+    if (item.unread) {
+      setItems((current) =>
+        current.map((entry) =>
+          entry.id === item.id ? { ...entry, unread: false } : entry,
+        ),
+      );
+      try {
+        await markNotificationRead(item.id);
+      } catch {
+        void load({ quiet: true });
+      }
+    }
+    if (item.href) {
+      router.push(item.href as Href);
     }
   }
 
@@ -129,7 +138,7 @@ export default function NotificationsScreen() {
         />
       </View>
 
-      {loading ? (
+      {loading && items.length === 0 ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator color="#C4A015" />
         </View>
@@ -137,7 +146,17 @@ export default function NotificationsScreen() {
         <ScrollView
           className="flex-1"
           contentContainerClassName="px-5 pb-8"
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => {
+                setRefreshing(true);
+                void load({ quiet: true });
+              }}
+              {...REFRESH_CONTROL_PROPS}
+            />
+          }>
           {grouped.length === 0 ? (
             <View className="items-center gap-2 py-16">
               <Text className="font-geist-semibold text-base text-stone-title">
@@ -160,7 +179,7 @@ export default function NotificationsScreen() {
                     }>
                     <NotificationRow
                       item={item}
-                      onPress={(next) => void markOneRead(next)}
+                      onPress={(next) => void openItem(next)}
                     />
                   </View>
                 ))}
