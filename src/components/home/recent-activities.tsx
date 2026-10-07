@@ -21,10 +21,32 @@ type RecentActivitiesProps = {
 function ActivityIcon({
   category,
   type,
+  kind,
 }: {
   category: ActivityItem['category'];
   type: ActivityItem['type'];
+  kind?: string;
 }) {
+  const mtKind = (kind || '').toUpperCase();
+  if (category === 'metatrader') {
+    if (mtKind === 'DEPOSIT') {
+      return <TrendIcon color="#166534" direction="up" size={18} />;
+    }
+    if (mtKind === 'WITHDRAWAL') {
+      return <TrendIcon color="#991B1B" direction="down" size={18} />;
+    }
+    if (mtKind === 'BALANCE' || mtKind === 'CREDIT') {
+      return <TrendIcon color="#1C1917" size={18} />;
+    }
+    return (
+      <TrendIcon
+        color={type === 'credit' ? '#166534' : '#991B1B'}
+        direction={type === 'credit' ? 'up' : 'down'}
+        size={18}
+      />
+    );
+  }
+
   switch (category) {
     case 'deposit':
       return <TrendIcon color="#166534" size={18} />;
@@ -36,14 +58,6 @@ function ActivityIcon({
       return <LinkIcon color="#1C1917" size={18} />;
     case 'signal':
       return <SignalsIcon color="#1C1917" size={18} />;
-    case 'metatrader':
-      return (
-        <TrendIcon
-          color={type === 'credit' ? '#166534' : '#991B1B'}
-          direction={type === 'credit' ? 'up' : 'down'}
-          size={18}
-        />
-      );
     default:
       return <EmptyActivityIcon size={18} />;
   }
@@ -86,7 +100,11 @@ export function RecentActivities({
               onPress={() => onItemPress?.(item)}
               className="flex-row items-center gap-3 rounded-2xl bg-[#F7F7F5] px-3 py-3">
               <View className="h-11 w-11 items-center justify-center rounded-full bg-white">
-                <ActivityIcon category={item.category} type={item.type} />
+                <ActivityIcon
+                  category={item.category}
+                  type={item.type}
+                  kind={item.kind}
+                />
               </View>
 
               <View className="min-w-0 flex-1 gap-0.5">

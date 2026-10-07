@@ -8,6 +8,7 @@ export type ActivityItem = {
   amount: string;
   type: 'credit' | 'debit';
   category: 'deposit' | 'withdrawal' | 'investment' | 'pool' | 'signal' | 'metatrader';
+  kind?: string;
   occurredAt?: string;
   href?: string | null;
 };

@@ -11,7 +11,7 @@ const env = {
 module.exports = {
   name: env.appName,
   slug: env.appSlug,
-  version: '1.2.1',
+  version: '1.2.6',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: env.scheme,
@@ -19,10 +19,11 @@ module.exports = {
   newArchEnabled: true,
 
   ios: {
-    supportsTablet: true,
+    supportsTablet: false,
     bundleIdentifier: env.iosBundleId,
     icon: './assets/images/icon.png',
     infoPlist: {
+      "UIDeviceFamily": [1],
       NSFaceIDUsageDescription:
         'Use Face ID to securely unlock your JMJ account without typing your PIN.',
       UIBackgroundModes: ['remote-notification'],
@@ -33,7 +34,7 @@ module.exports = {
 
   android: {
     package: env.androidPackage,
-    versionCode: 8,
+    versionCode: 9,
     // Local Nest API over HTTP (LAN / emulator). Prefer HTTPS in store builds.
     usesCleartextTraffic: true,
     googleServicesFile:

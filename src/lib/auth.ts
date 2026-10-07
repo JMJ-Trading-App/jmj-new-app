@@ -23,6 +23,13 @@ export function getSignupInitials() {
   return `${first}${last}`.toUpperCase() || 'JM';
 }
 
+export async function deleteMyAccount() {
+  return apiRequest<{ message: string }>('/users/me', {
+    method: 'DELETE',
+    auth: true,
+  });
+}
+
 export async function checkEmailAvailability(
   email: string,
 ): Promise<EmailAvailabilityResult> {
