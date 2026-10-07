@@ -25,7 +25,7 @@ export async function fetchPool(id: string) {
 export async function joinPool(
   id: string,
   payload: {
-    paymentMethod: PaymentMethodApi;
+    paymentMethod?: PaymentMethodApi;
     paymentProofUrl?: string;
     contributionUsd?: number;
   },

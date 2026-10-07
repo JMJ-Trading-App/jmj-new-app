@@ -26,7 +26,7 @@ export async function fetchInvestment(id: string) {
 export async function createInvestment(payload: {
   amountUsd: number;
   riskLevel: string;
-  paymentMethod: PaymentMethodApi;
+  paymentMethod?: PaymentMethodApi;
   paymentProofUrl?: string;
   payoutAccountId?: string;
   name?: string;

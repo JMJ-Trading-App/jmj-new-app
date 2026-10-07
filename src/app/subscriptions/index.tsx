@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import type { SubscriptionCategory, SubscriptionPlan } from '@/constants/subscriptions-data';
 import type { SubscriptionPlanApi } from '@/lib/api/types';
 import { alertError, alertSuccess } from '@/lib/errors';
+import { waitForWhopPayment } from '@/lib/whop-checkout';
 import {
   checkoutSubscription,
   fetchSubscriptionPlans,
@@ -76,8 +77,19 @@ export default function SubscriptionsScreen() {
     try {
       const result = await checkoutSubscription(selectedId);
 
-      if (result.payment.mode === 'paystack' && result.payment.authorizationUrl) {
+      if (
+        (result.payment.mode === 'whop' || result.payment.mode === 'paystack') &&
+        result.payment.authorizationUrl
+      ) {
         await WebBrowser.openBrowserAsync(result.payment.authorizationUrl);
+        if (result.payment.mode === 'whop') {
+          const status = await waitForWhopPayment(result.payment.reference);
+          if (status.status !== 'PAID') {
+            throw new Error(
+              'Payment is not confirmed yet. If you completed checkout, the plan activates once Whop confirms it.',
+            );
+          }
+        }
         const verified = await verifySubscriptionPayment(result.payment.reference);
         alertSuccess(verified.message);
       } else {

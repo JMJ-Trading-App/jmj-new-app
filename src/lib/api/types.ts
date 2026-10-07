@@ -148,12 +148,19 @@ export type InvestOptionsResponse = {
   };
 };
 
+export type WhopCheckoutApi = {
+  mode: 'mock' | 'whop';
+  paymentId: string;
+  url: string | null;
+};
+
 export type CreateInvestmentResponse = {
   message: string;
   investment: InvestmentItemApi;
   paymentReference: string;
   serviceChargeUsd: number;
   serviceCharge: string;
+  checkout?: WhopCheckoutApi;
 };
 
 export type PoolItemApi = {
@@ -228,6 +235,7 @@ export type JoinPoolResponse = {
   paymentReference: string;
   serviceChargeUsd: number;
   serviceCharge: string;
+  checkout?: WhopCheckoutApi;
   pool: PoolItemApi;
 };
 
@@ -273,7 +281,7 @@ export type SubscriptionApi = {
 export type CheckoutResponse = {
   message: string;
   payment: {
-    mode: 'mock' | 'paystack';
+    mode: 'mock' | 'paystack' | 'whop';
     reference: string;
     authorizationUrl: string | null;
     accessCode: string | null;
