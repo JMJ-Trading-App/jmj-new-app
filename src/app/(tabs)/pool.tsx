@@ -24,8 +24,8 @@ import {
 import { BottomTabInset } from '@/constants/theme';
 import { REFRESH_CONTROL_PROPS } from '@/constants/refresh';
 import type { PoolItemApi } from '@/lib/api/types';
-import { alertError } from '@/lib/errors';
-import { fetchPools } from '@/lib/pool';
+import { alertError, alertSuccess } from '@/lib/errors';
+import { fetchPools, togglePoolNotify } from '@/lib/pool';
 
 function toPoolItem(pool: PoolItemApi): PoolItem {
   return {
@@ -52,6 +52,7 @@ function toPoolItem(pool: PoolItemApi): PoolItem {
     position: pool.position,
     gains: pool.gains,
     ctaLabel: pool.ctaLabel,
+    notifySet: pool.notifySet,
   };
 }
 
@@ -107,6 +108,26 @@ export default function PoolScreen() {
     router.push(`/pool/${pool.id}` as Href);
   }
 
+  async function handleAction(pool: PoolItem) {
+    if (pool.status !== 'upcoming') {
+      openPool(pool);
+      return;
+    }
+    try {
+      const result = await togglePoolNotify(pool.id);
+      setPools((current) =>
+        current.map((item) =>
+          item.id === pool.id
+            ? { ...item, ctaLabel: result.ctaLabel, notifySet: result.notifySet }
+            : item,
+        ),
+      );
+      alertSuccess(result.message);
+    } catch (error) {
+      alertError(error, 'Could not update pool notification');
+    }
+  }
+
   return (
     <View className="flex-1 bg-white">
       <ScrollView
@@ -147,7 +168,7 @@ export default function PoolScreen() {
                 key={pool.id}
                 pool={pool}
                 onPress={openPool}
-                onActionPress={openPool}
+                onActionPress={(pool) => void handleAction(pool)}
               />
             ))}
           </View>

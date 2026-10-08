@@ -45,6 +45,7 @@ module.exports = {
       monochromeImage: './assets/images/android-icon-monochrome.png',
     },
     predictiveBackGestureEnabled: false,
+    permissions: ['android.permission.POST_NOTIFICATIONS'],
   },
 
   web: {

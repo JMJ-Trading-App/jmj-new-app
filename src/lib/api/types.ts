@@ -200,6 +200,7 @@ export type PoolItemApi = {
   };
   gains: string[];
   ctaLabel: string;
+  notifySet?: boolean;
   membershipStatus: 'pending' | 'active' | 'completed' | null;
   myMembership: {
     id: string;

@@ -11,6 +11,7 @@ import { SessionUserRefresh, useSession } from '@/hooks/use-session';
 import {
   clearPushRegistration,
   syncPushRegistration,
+  watchPushRegistration,
 } from '@/lib/push-register';
 import { hydrateSession } from '@/lib/session';
 
@@ -36,9 +37,10 @@ function PushRegistration() {
 
     if (isAuthenticated) {
       void syncPushRegistration().catch(() => undefined);
-    } else {
-      void clearPushRegistration().catch(() => undefined);
+      return watchPushRegistration(true);
     }
+    void clearPushRegistration().catch(() => undefined);
+    return undefined;
   }, [hydrated, isAuthenticated]);
 
   useEffect(() => {

@@ -41,6 +41,7 @@ export type PoolItem = {
   position?: PoolMemberPosition;
   gains: string[];
   ctaLabel: string;
+  notifySet?: boolean;
 };
 
 export type PoolSummary = {

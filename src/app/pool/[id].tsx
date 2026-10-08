@@ -10,8 +10,8 @@ import { Button } from '@/components/ui/button';
 import { type PoolItem, type PoolStatus } from '@/constants/pool-data';
 import type { PoolItemApi } from '@/lib/api/types';
 import { cn } from '@/lib/cn';
-import { alertError } from '@/lib/errors';
-import { fetchPool } from '@/lib/pool';
+import { alertError, alertSuccess } from '@/lib/errors';
+import { fetchPool, togglePoolNotify } from '@/lib/pool';
 import { resetPoolDraft, setPoolDraftPool } from '@/lib/pool-draft';
 import { useSupportSettings } from '@/hooks/use-support-settings';
 
@@ -40,6 +40,7 @@ function mapPool(pool: PoolItemApi): PoolItem {
     position: pool.position,
     gains: pool.gains,
     ctaLabel: pool.ctaLabel,
+    notifySet: pool.notifySet,
   };
 }
 
@@ -67,6 +68,7 @@ export default function PoolDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [pool, setPool] = useState<PoolItem | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notifying, setNotifying] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -84,6 +86,24 @@ export default function PoolDetailScreen() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  async function handleNotify() {
+    if (!pool || notifying) return;
+    setNotifying(true);
+    try {
+      const result = await togglePoolNotify(pool.id);
+      setPool((current) =>
+        current
+          ? { ...current, ctaLabel: result.ctaLabel, notifySet: result.notifySet }
+          : current,
+      );
+      alertSuccess(result.message);
+    } catch (error) {
+      alertError(error, 'Could not update pool notification');
+    } finally {
+      setNotifying(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -160,7 +180,12 @@ export default function PoolDetailScreen() {
           whatsappUrl={settings.whatsappUrl}
         />
       ) : (
-        <JoinablePoolDetail pool={pool} bottomInset={insets.bottom} />
+        <JoinablePoolDetail
+          pool={pool}
+          bottomInset={insets.bottom}
+          notifying={notifying}
+          onNotify={() => void handleNotify()}
+        />
       )}
     </View>
   );
@@ -374,9 +399,20 @@ function ActiveMemberPoolDetail({
   );
 }
 
-function JoinablePoolDetail({ pool, bottomInset }: { pool: PoolItem; bottomInset: number }) {
+function JoinablePoolDetail({
+  pool,
+  bottomInset,
+  notifying,
+  onNotify,
+}: {
+  pool: PoolItem;
+  bottomInset: number;
+  notifying: boolean;
+  onNotify: () => void;
+}) {
   const status = STATUS_STYLES[pool.status];
   const isJoinable = pool.status === 'active';
+  const isUpcoming = pool.status === 'upcoming';
 
   return (
     <>
@@ -454,12 +490,16 @@ function JoinablePoolDetail({ pool, bottomInset }: { pool: PoolItem; bottomInset
       <View className="px-5" style={{ paddingBottom: Math.max(bottomInset, 24) }}>
         <Button
           label={pool.ctaLabel}
+          loading={isUpcoming && notifying}
+          disabled={isUpcoming && notifying}
           onPress={() => {
             if (isJoinable) {
               resetPoolDraft();
               setPoolDraftPool(pool.id, pool.name);
               router.push(`/pool/join/${pool.id}` as Href);
+              return;
             }
+            if (isUpcoming) onNotify();
           }}
         />
       </View>

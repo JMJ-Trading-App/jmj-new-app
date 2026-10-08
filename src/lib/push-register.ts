@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 
 import { registerPushToken, unregisterPushToken } from '@/lib/push';
 
@@ -69,9 +69,21 @@ export async function syncPushRegistration() {
 
     await registerPushToken(token, Platform.OS);
     return token;
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`Push registration failed: ${message}`);
     return null;
   }
+}
+
+export function watchPushRegistration(isAuthenticated: boolean) {
+  if (!isAuthenticated) return () => undefined;
+  const sub = AppState.addEventListener('change', (state) => {
+    if (state === 'active') {
+      void syncPushRegistration();
+    }
+  });
+  return () => sub.remove();
 }
 
 export async function clearPushRegistration() {

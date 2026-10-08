@@ -18,6 +18,17 @@ export async function fetchPools() {
   return apiRequest<PoolListResponse>('/pool', { auth: true });
 }
 
+export async function togglePoolNotify(id: string) {
+  return apiRequest<{
+    message: string;
+    notifySet: boolean;
+    ctaLabel: string;
+  }>(`/pool/${id}/notify`, {
+    method: 'POST',
+    auth: true,
+  });
+}
+
 export async function fetchPool(id: string) {
   return apiRequest<PoolItemApi>(`/pool/${id}`, { auth: true });
 }
