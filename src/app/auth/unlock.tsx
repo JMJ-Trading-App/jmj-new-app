@@ -1,6 +1,6 @@
 import { router, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { InteractionManager, Platform, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,7 @@ export default function UnlockScreen() {
   const [bioLoading, setBioLoading] = useState(false);
   const [useServerPin, setUseServerPin] = useState(false);
   const attemptedBiometrics = useRef(false);
+  const tryBiometricsRef = useRef<() => Promise<void>>(async () => {});
 
   const canContinue = useMemo(() => pin.length === PIN_LENGTH, [pin.length]);
 
@@ -69,6 +70,8 @@ export default function UnlockScreen() {
     }
   }, [bioLoading, finishUnlock]);
 
+  tryBiometricsRef.current = tryBiometrics;
+
   useEffect(() => {
     if (!hasValidSession()) {
       router.replace('/auth/sign-in' as Href);
@@ -89,24 +92,41 @@ export default function UnlockScreen() {
 
       setUseServerPin(!pinReady && Boolean(user?.pinSet));
       setReady(true);
-
-      const biometricsOn =
-        (await isBiometricsEnabledLocally()) || Boolean(user?.biometricsEnabled);
-      const canBio = biometricsOn && (await canUseDeviceBiometrics());
-
-      if (cancelled) return;
-      if (canBio && pinReady && !attemptedBiometrics.current) {
-        attemptedBiometrics.current = true;
-        await tryBiometrics();
-      }
     })();
 
     return () => {
       cancelled = true;
     };
-    // Intentionally omit tryBiometrics — auto-prompt should only run once on mount/user load.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.biometricsEnabled, user?.pinSet]);
+  }, [user?.pinSet]);
+
+  useEffect(() => {
+    if (!ready) return;
+
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const interaction = InteractionManager.runAfterInteractions(() => {
+      // Android drops BiometricPrompt when it starts before the activity is resumed.
+      timer = setTimeout(() => {
+        if (cancelled || attemptedBiometrics.current) return;
+        void (async () => {
+          const pinReady = await hasLocalPin();
+          const biometricsOn =
+            (await isBiometricsEnabledLocally()) || Boolean(user?.biometricsEnabled);
+          const canBio =
+            biometricsOn && pinReady && (await canUseDeviceBiometrics());
+          if (cancelled || !canBio || attemptedBiometrics.current) return;
+          attemptedBiometrics.current = true;
+          await tryBiometricsRef.current();
+        })();
+      }, Platform.OS === 'android' ? 400 : 0);
+    });
+
+    return () => {
+      cancelled = true;
+      interaction.cancel();
+      if (timer) clearTimeout(timer);
+    };
+  }, [ready, user?.biometricsEnabled]);
 
   function handleKeyPress(digit: string) {
     setPin((current) =>
