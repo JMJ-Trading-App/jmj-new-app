@@ -50,6 +50,7 @@ export default function NotificationsScreen() {
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selected, setSelected] = useState<NotificationItem | null>(null);
 
   const load = useCallback(async (opts?: { quiet?: boolean }) => {
     if (!opts?.quiet) setLoading(true);
@@ -102,9 +103,14 @@ export default function NotificationsScreen() {
         void load({ quiet: true });
       }
     }
-    if (item.href) {
-      router.push(item.href as Href);
-    }
+    setSelected(item);
+  }
+
+  function openSelected() {
+    if (!selected?.href) return;
+    const href = selected.href;
+    setSelected(null);
+    router.push(href as Href);
   }
 
   return (
@@ -121,7 +127,12 @@ export default function NotificationsScreen() {
             <SymbolView name="chevron.left" size={20} tintColor="#1C1917" weight="medium" />
           </Pressable>
 
-          <Text className="font-geist-bold text-lg text-stone-title">Notifications</Text>
+          <View className="items-center">
+            <Text className="font-geist-bold text-lg text-stone-title">Notifications</Text>
+            <Text className="font-geist text-[11px] text-muted">
+              {items.filter((item) => item.unread).length} unread
+            </Text>
+          </View>
 
           <Pressable
             accessibilityRole="button"
@@ -162,7 +173,11 @@ export default function NotificationsScreen() {
               <Text className="font-geist-semibold text-base text-stone-title">
                 No notifications
               </Text>
-              <Text className="font-geist text-sm text-muted">You’re all caught up.</Text>
+              <Text className="px-6 text-center font-geist text-sm text-muted">
+                {filter === 'all'
+                  ? 'Account, investment, and pool updates will stay in this history.'
+                  : `No ${filter} notifications yet.`}
+              </Text>
             </View>
           ) : (
             grouped.map((section) => (
@@ -188,6 +203,42 @@ export default function NotificationsScreen() {
           )}
         </ScrollView>
       )}
+
+      {selected ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setSelected(null)}
+          className="absolute inset-0 justify-end bg-black/40">
+          <Pressable
+            onPress={(event) => event.stopPropagation?.()}
+            className="rounded-t-[24px] bg-white px-5 pt-5"
+            style={{ paddingBottom: Math.max(insets.bottom, 20) }}>
+            <Text className="font-geist text-[12px] uppercase tracking-wide text-muted">
+              {selected.category} · {selected.time}
+            </Text>
+            <Text className="mt-2 font-geist-bold text-[20px] text-stone-title">
+              {selected.title}
+            </Text>
+            <Text className="mt-3 font-geist text-[15px] leading-[22px] text-stone-body">
+              {selected.body}
+            </Text>
+            <View className="mt-5 flex-row gap-3">
+              <Pressable
+                onPress={() => setSelected(null)}
+                className="flex-1 items-center rounded-[14px] bg-[#F3F4F6] py-3">
+                <Text className="font-geist-semibold text-[15px] text-stone-title">Close</Text>
+              </Pressable>
+              {selected.href ? (
+                <Pressable
+                  onPress={openSelected}
+                  className="flex-1 items-center rounded-[14px] bg-stone-title py-3">
+                  <Text className="font-geist-semibold text-[15px] text-white">Open</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </Pressable>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
