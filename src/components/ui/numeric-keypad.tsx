@@ -51,7 +51,12 @@ export function NumericKeypad({
             onPress={onBiometricPress}
             className="flex-1 items-center justify-center min-h-14 max-w-[120px]"
             style={({ pressed }) => [pressed && { opacity: 0.5 }]}>
-            <SymbolView name="touchid" size={28} tintColor="#000000" weight="regular" />
+            <SymbolView
+              name={{ ios: 'touchid', android: 'fingerprint', web: 'fingerprint' }}
+              size={28}
+              tintColor="#000000"
+              weight="regular"
+            />
           </Pressable>
         ) : (
           <View className="flex-1 items-center justify-center min-h-14 max-w-[120px]" />
@@ -72,7 +77,12 @@ export function NumericKeypad({
           onPress={onDelete}
           className="flex-1 items-center justify-center min-h-14 max-w-[120px]"
           style={({ pressed }) => [pressed && { opacity: 0.5 }]}>
-          <SymbolView name="delete.left" size={24} tintColor="#000000" weight="medium" />
+          <SymbolView
+            name={{ ios: 'delete.left', android: 'backspace', web: 'backspace' }}
+            size={24}
+            tintColor="#000000"
+            weight="medium"
+          />
         </Pressable>
       </View>
     </View>

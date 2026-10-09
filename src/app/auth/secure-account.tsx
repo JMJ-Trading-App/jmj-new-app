@@ -1,7 +1,7 @@
 import { SymbolView } from 'expo-symbols';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Switch, View } from 'react-native';
+import { Platform, Switch, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
@@ -36,19 +36,18 @@ export default function SecureAccountScreen() {
     setPin((current) => current.slice(0, -1));
   }
 
-  async function handleBiometricPress() {
-    if (bioLoading) return;
+  async function confirmBiometrics() {
+    if (bioLoading) return false;
     setBioLoading(true);
     try {
       const available = await canUseDeviceBiometrics();
       if (!available) {
-        setBiometricsEnabled(false);
         const label = await getBiometricLabel();
         alertError(
           new Error(`Set up ${label} in your device settings, then try again.`),
           'Biometrics unavailable',
         );
-        return;
+        return false;
       }
 
       const label = await getBiometricLabel();
@@ -56,15 +55,28 @@ export default function SecureAccountScreen() {
         promptMessage: `Enable ${label} for JMJ`,
       });
       if (ok) {
-        setBiometricsEnabled(true);
         alertSuccess(`${label} enabled for quick unlock.`, 'Enabled');
       }
+      return ok;
     } catch (error) {
-      setBiometricsEnabled(false);
       alertError(error, 'Biometrics unavailable');
+      return false;
     } finally {
       setBioLoading(false);
     }
+  }
+
+  async function handleBiometricPress() {
+    const ok = await confirmBiometrics();
+    if (ok) setBiometricsEnabled(true);
+  }
+
+  async function handleBiometricToggle(next: boolean) {
+    if (!next) {
+      setBiometricsEnabled(false);
+      return;
+    }
+    setBiometricsEnabled(await confirmBiometrics());
   }
 
   async function handleContinue() {
@@ -113,18 +125,24 @@ export default function SecureAccountScreen() {
 
         <View className="flex-row items-center gap-2 rounded-xl border border-border px-4 py-4">
           <SymbolView
-            name="touchid"
+            name={{ ios: 'touchid', android: 'fingerprint', web: 'fingerprint' }}
             size={22}
             tintColor="#000000"
             weight="regular"
           />
-          <ThemedText className="flex-1">Enable Face/Touch ID</ThemedText>
+          <ThemedText className="flex-1">
+            {Platform.OS === 'android'
+              ? 'Enable fingerprint or face unlock'
+              : 'Enable Face/Touch ID'}
+          </ThemedText>
           <Switch
-            accessibilityLabel="Enable Face or Touch ID"
+            accessibilityLabel="Enable fingerprint or face unlock"
             value={biometricsEnabled}
             trackColor={{ false: '#E5E7EB', true: '#000000' }}
             thumbColor="#ffffff"
-            onValueChange={setBiometricsEnabled}
+            onValueChange={(next) => {
+              void handleBiometricToggle(next);
+            }}
           />
         </View>
 

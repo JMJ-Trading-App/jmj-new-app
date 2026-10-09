@@ -66,6 +66,7 @@ export const MORE_SECTIONS: MoreMenuSection[] = [
       },
       { id: 'occupation', label: 'Occupation & Source of Funds', icon: 'occupation', href: '/occupation' },
       { id: 'payout', label: 'Payout Account', icon: 'payout', href: '/payout-account' },
+      { id: 'orders', label: 'Orders', icon: 'occupation', href: '/orders' },
     ],
   },
   {
@@ -101,6 +102,7 @@ export const MORE_SECTIONS: MoreMenuSection[] = [
     title: 'SUPPORT',
     items: [
       { id: 'help', label: 'Help Center', icon: 'help', href: '/help-center' },
+      { id: 'contact', label: 'Contact Support', icon: 'whatsapp', href: '/support-message' },
       {
         id: 'whatsapp',
         label: 'Contact Us on WhatsApp',

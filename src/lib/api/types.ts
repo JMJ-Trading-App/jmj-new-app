@@ -112,6 +112,14 @@ export type InvestPortfolioResponse = {
     invested: string;
     returns: string;
     returnsPositive: boolean;
+    metaTrader?: {
+      linked: boolean;
+      platform: string;
+      login: string;
+      server: string;
+      status: string;
+      currency: string;
+    } | null;
   };
   investments: InvestmentItemApi[];
 };

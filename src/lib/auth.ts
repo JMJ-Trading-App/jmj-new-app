@@ -24,8 +24,8 @@ export function getSignupInitials() {
 }
 
 export async function deleteMyAccount() {
-  return apiRequest<{ message: string }>('/users/me', {
-    method: 'DELETE',
+  return apiRequest<{ message: string }>('/users/me/close', {
+    method: 'POST',
     auth: true,
   });
 }

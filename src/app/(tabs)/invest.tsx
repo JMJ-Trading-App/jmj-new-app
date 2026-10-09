@@ -25,6 +25,7 @@ import { BottomTabInset } from '@/constants/theme';
 import { REFRESH_CONTROL_PROPS } from '@/constants/refresh';
 import type { InvestmentItemApi } from '@/lib/api/types';
 import { alertError } from '@/lib/errors';
+import { syncMetaTraderAccount } from '@/lib/activity';
 import { resetInvestDraft } from '@/lib/invest-draft';
 import { fetchInvestPortfolio } from '@/lib/invest';
 
@@ -61,11 +62,19 @@ export default function InvestScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [portfolio, setPortfolio] = useState<PortfolioSummary>(EMPTY_PORTFOLIO);
   const [investments, setInvestments] = useState<InvestmentItem[]>([]);
+  const [linkedAccount, setLinkedAccount] = useState<string | null>(null);
 
   const load = useCallback(async (opts?: { quiet?: boolean }) => {
     if (!opts?.quiet) setLoading(true);
     try {
+      await syncMetaTraderAccount().catch(() => null);
       const result = await fetchInvestPortfolio();
+      const mt = result.portfolio.metaTrader;
+      setLinkedAccount(
+        mt?.login
+          ? `${mt.platform} ${mt.login} · ${mt.server} · ${mt.status === 'LINKED' ? 'linked' : mt.status}`
+          : null,
+      );
       setPortfolio({
         totalValueWhole: result.portfolio.totalValueWhole,
         totalValueCents: result.portfolio.totalValueCents,
@@ -114,6 +123,15 @@ export default function InvestScreen() {
           />
         }>
         <InvestHeader onHelpPress={() => setHelpOpen(true)} />
+        {linkedAccount ? (
+          <Text className="font-geist text-[13px] text-muted">
+            Same account as Home · {linkedAccount}
+          </Text>
+        ) : (
+          <Text className="font-geist text-[13px] text-muted">
+            Link MetaTrader on Home to show the live account balance here.
+          </Text>
+        )}
 
         <PortfolioSummaryCard
           portfolio={portfolio}

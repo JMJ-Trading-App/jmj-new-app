@@ -143,6 +143,34 @@ export async function getBiometricLabel() {
   return 'biometrics';
 }
 
+function biometricFailureMessage(error: string, warning?: string) {
+  if (error === 'not_enrolled' || error === 'passcode_not_set') {
+    return 'Add a fingerprint or face unlock in your phone settings. This phone also needs a screen lock.';
+  }
+  if (error === 'not_available') {
+    return 'Fingerprint is not available on this phone right now. Use your PIN.';
+  }
+  if (error === 'lockout') {
+    return 'Too many attempts. Use your PIN, then try fingerprint again.';
+  }
+  if (error === 'authentication_failed') {
+    return 'Fingerprint was not recognized. Try again or use your PIN.';
+  }
+  if (warning && !warning.includes('KeyguardManager')) return warning;
+  return 'Fingerprint could not be used. Use your PIN.';
+}
+
+async function promptForBiometrics(promptMessage: string) {
+  return LocalAuthentication.authenticateAsync({
+    promptMessage,
+    cancelLabel: 'Use PIN',
+    disableDeviceFallback: true,
+    ...(Platform.OS === 'android'
+      ? { requireConfirmation: false, biometricsSecurityLevel: 'weak' as const }
+      : {}),
+  });
+}
+
 export async function authenticateWithBiometrics(options?: {
   promptMessage?: string;
 }) {
@@ -161,11 +189,29 @@ export async function authenticateWithBiometrics(options?: {
   }
 
   const label = await getBiometricLabel();
-  const result = await LocalAuthentication.authenticateAsync({
-    promptMessage: options?.promptMessage ?? `Unlock JMJ with ${label}`,
-    cancelLabel: 'Use PIN',
-    disableDeviceFallback: true,
-  });
+  const promptMessage = options?.promptMessage ?? `Unlock JMJ with ${label}`;
+  let result = await promptForBiometrics(promptMessage);
 
-  return result.success;
+  // A prompt started before the Android activity was ready leaves the
+  // module busy. Clear it and try once more.
+  if (!result.success && result.error === 'app_cancel') {
+    try {
+      await LocalAuthentication.cancelAuthenticate();
+    } catch {
+      // The native module may already be idle.
+    }
+    result = await promptForBiometrics(promptMessage);
+  }
+
+  if (result.success) return true;
+  if (
+    result.error === 'user_cancel' ||
+    result.error === 'system_cancel' ||
+    result.error === 'app_cancel' ||
+    result.error === 'user_fallback'
+  ) {
+    return false;
+  }
+
+  throw new Error(biometricFailureMessage(result.error, result.warning));
 }
