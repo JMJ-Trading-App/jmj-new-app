@@ -125,10 +125,16 @@ export async function verifyLocalPin(pin: string) {
 
 export async function canUseDeviceBiometrics() {
   if (Platform.OS === 'web') return false;
-  const compatible = await LocalAuthentication.hasHardwareAsync();
-  if (!compatible) return false;
-  const enrolled = await LocalAuthentication.isEnrolledAsync();
-  return enrolled;
+  try {
+    const hardware = await LocalAuthentication.hasHardwareAsync();
+    if (!hardware) return false;
+    // Android BiometricManager often reports "not enrolled" on phones that
+    // already have a fingerprint saved. Hardware is enough to try the prompt.
+    if (Platform.OS === 'android') return true;
+    return LocalAuthentication.isEnrolledAsync();
+  } catch {
+    return false;
+  }
 }
 
 export async function getBiometricLabel() {
@@ -149,10 +155,10 @@ export async function getBiometricLabel() {
 
 function biometricFailureMessage(error: string, warning?: string) {
   if (error === 'not_enrolled' || error === 'passcode_not_set') {
-    return 'Add a fingerprint or face unlock in your phone settings. This phone also needs a screen lock.';
+    return 'Android could not open the fingerprint prompt. In phone settings, turn on a screen lock PIN and save the fingerprint under Security, then try again.';
   }
   if (error === 'not_available') {
-    return 'Fingerprint is not available on this phone right now. Use your PIN.';
+    return 'The fingerprint sensor did not respond. Try again, or use your PIN.';
   }
   if (error === 'lockout') {
     return 'Too many attempts. Use your PIN, then try fingerprint again.';
@@ -165,14 +171,54 @@ function biometricFailureMessage(error: string, warning?: string) {
 }
 
 async function promptForBiometrics(promptMessage: string) {
-  return LocalAuthentication.authenticateAsync({
-    promptMessage,
-    cancelLabel: 'Use PIN',
-    disableDeviceFallback: true,
-    ...(Platform.OS === 'android'
-      ? { requireConfirmation: false, biometricsSecurityLevel: 'weak' as const }
-      : {}),
-  });
+  if (Platform.OS !== 'android') {
+    return LocalAuthentication.authenticateAsync({
+      promptMessage,
+      cancelLabel: 'Use PIN',
+      disableDeviceFallback: true,
+    });
+  }
+
+  let primary: LocalAuthentication.LocalAuthenticationResult;
+  try {
+    primary = await LocalAuthentication.authenticateAsync({
+      promptMessage,
+      cancelLabel: 'Use PIN',
+      disableDeviceFallback: true,
+      requireConfirmation: false,
+      biometricsSecurityLevel: 'weak',
+    });
+  } catch {
+    primary = { success: false, error: 'not_available' };
+  }
+
+  if (primary.success) return primary;
+  if (
+    primary.error !== 'not_enrolled' &&
+    primary.error !== 'not_available' &&
+    primary.error !== 'unknown'
+  ) {
+    return primary;
+  }
+
+  // Some Android phones only offer the saved fingerprint on the system
+  // lock screen, not through the biometric-only prompt.
+  try {
+    await LocalAuthentication.cancelAuthenticate();
+  } catch {
+    // The native module may already be idle.
+  }
+
+  try {
+    return await LocalAuthentication.authenticateAsync({
+      promptMessage,
+      disableDeviceFallback: false,
+      requireConfirmation: false,
+      biometricsSecurityLevel: 'strong',
+    });
+  } catch {
+    return primary;
+  }
 }
 
 export async function authenticateWithBiometrics(options?: {
@@ -187,9 +233,11 @@ export async function authenticateWithBiometrics(options?: {
     throw new Error('This device does not support Face ID or fingerprint.');
   }
 
-  const enrolled = await LocalAuthentication.isEnrolledAsync();
-  if (!enrolled) {
-    throw new Error('No Face ID or fingerprint is set up on this device.');
+  if (Platform.OS !== 'android') {
+    const enrolled = await LocalAuthentication.isEnrolledAsync();
+    if (!enrolled) {
+      throw new Error('No Face ID or fingerprint is set up on this device.');
+    }
   }
 
   const label = await getBiometricLabel();

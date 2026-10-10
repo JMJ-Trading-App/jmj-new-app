@@ -69,7 +69,7 @@ export default function BiometricsScreen() {
       if (!deviceReady) {
         setAvailable(false);
         alertError(
-          new Error(`Set up ${label} in your phone settings, then try again.`),
+          new Error('This phone has no fingerprint or face sensor JMJ can use.'),
           'Biometrics unavailable',
         );
         return;
