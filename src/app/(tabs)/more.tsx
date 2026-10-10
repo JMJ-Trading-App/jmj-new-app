@@ -41,8 +41,8 @@ export default function MoreScreen() {
   );
 
   const sections = useMemo(
-    () => moreSectionsWithUser(user?.kycStatus),
-    [user?.kycStatus],
+    () => moreSectionsWithUser(user?.kycStatus, user?.biometricsEnabled),
+    [user?.biometricsEnabled, user?.kycStatus],
   );
 
   function handleItemPress(item: MoreMenuItem) {

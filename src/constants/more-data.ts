@@ -7,6 +7,7 @@ export type MoreIconId =
   | 'occupation'
   | 'payout'
   | 'password'
+  | 'biometrics'
   | 'twoFactor'
   | 'tradingClasses'
   | 'signals'
@@ -75,6 +76,13 @@ export const MORE_SECTIONS: MoreMenuSection[] = [
     items: [
       { id: 'password', label: 'Change Password', icon: 'password', href: '/change-password' },
       {
+        id: 'biometrics',
+        label: 'Biometric Unlock',
+        icon: 'biometrics',
+        href: '/biometrics',
+        badge: { label: 'Off', variant: 'status' },
+      },
+      {
         id: 'two-factor',
         label: 'Two-Factor Authentication',
         icon: 'twoFactor',
@@ -136,13 +144,25 @@ export function kycMoreBadge(status?: string | null): MoreMenuItem['badge'] {
   }
 }
 
-export function moreSectionsWithUser(kycStatus?: string | null): MoreMenuSection[] {
+export function moreSectionsWithUser(
+  kycStatus?: string | null,
+  biometricsEnabled?: boolean,
+): MoreMenuSection[] {
   return MORE_SECTIONS.map((section) => ({
     ...section,
-    items: section.items.map((item) =>
-      item.id === 'kyc'
-        ? { ...item, badge: kycMoreBadge(kycStatus) }
-        : item,
-    ),
+    items: section.items.map((item) => {
+      if (item.id === 'kyc') {
+        return { ...item, badge: kycMoreBadge(kycStatus) };
+      }
+      if (item.id === 'biometrics') {
+        return {
+          ...item,
+          badge: biometricsEnabled
+            ? { label: 'On', variant: 'verified' as const }
+            : { label: 'Off', variant: 'status' as const },
+        };
+      }
+      return item;
+    }),
   }));
 }

@@ -5,7 +5,11 @@ import type {
   PublicUser,
 } from '@/lib/api/types';
 import { getCachedUser, setSession, updateSessionUser } from '@/lib/session';
-import { markUnlocked, saveLocalUnlockCredentials } from '@/lib/lock';
+import {
+  markUnlocked,
+  saveLocalUnlockCredentials,
+  setLocalBiometricsEnabled,
+} from '@/lib/lock';
 
 export function getSignupFirstName() {
   return getCachedUser()?.firstName?.trim() ?? '';
@@ -123,6 +127,17 @@ export async function submitPreferences(payload: {
     auth: true,
     body: payload,
   });
+  await updateSessionUser(user);
+  return user;
+}
+
+export async function updateBiometricsEnabled(enabled: boolean) {
+  const user = await apiRequest<PublicUser>('/users/biometrics', {
+    method: 'PATCH',
+    auth: true,
+    body: { biometricsEnabled: enabled },
+  });
+  await setLocalBiometricsEnabled(enabled);
   await updateSessionUser(user);
   return user;
 }

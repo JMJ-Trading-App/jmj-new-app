@@ -99,6 +99,43 @@ export function PasswordLockIcon({ color = '#1C1917', size = 22 }: IconProps) {
   );
 }
 
+export function FingerprintIcon({ color = '#1C1917', size = 22 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 4.5C8.4 4.5 5.5 7.4 5.5 11.1V13.2"
+        stroke={color}
+        strokeWidth={1.6}
+        strokeLinecap="round"
+      />
+      <Path
+        d="M8 12.2C8 9.9 9.8 8.1 12 8.1C14.2 8.1 16 9.9 16 12.2V14"
+        stroke={color}
+        strokeWidth={1.6}
+        strokeLinecap="round"
+      />
+      <Path
+        d="M12 10.4V16.8"
+        stroke={color}
+        strokeWidth={1.6}
+        strokeLinecap="round"
+      />
+      <Path
+        d="M9.4 14.2C9.8 16.4 10.6 18 12 19.2"
+        stroke={color}
+        strokeWidth={1.6}
+        strokeLinecap="round"
+      />
+      <Path
+        d="M14.8 14.6C14.4 16.2 13.6 17.6 12.6 18.6"
+        stroke={color}
+        strokeWidth={1.6}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
 export function TwoFactorKeyIcon({ color = '#1C1917', size = 22 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">

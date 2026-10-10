@@ -112,6 +112,10 @@ export async function isBiometricsEnabledLocally() {
   return value === '1';
 }
 
+export async function setLocalBiometricsEnabled(enabled: boolean) {
+  await storageSet(BIOMETRICS_KEY, enabled ? '1' : '0');
+}
+
 export async function verifyLocalPin(pin: string) {
   const stored = await storageGet(PIN_HASH_KEY);
   if (!stored) return false;

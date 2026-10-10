@@ -5,6 +5,7 @@ import { HelpIcon } from '@/components/invest/invest-icons';
 import { WhatsAppIcon } from '@/components/invest/invest-flow-icons';
 import {
   DocumentIcon,
+  FingerprintIcon,
   KycShieldIcon,
   LuckySixIcon,
   MenuChevronIcon,
@@ -52,6 +53,8 @@ function MenuIcon({ id }: { id: MoreIconId }) {
       return <PayoutCardIcon />;
     case 'password':
       return <PasswordLockIcon />;
+    case 'biometrics':
+      return <FingerprintIcon />;
     case 'twoFactor':
       return <TwoFactorKeyIcon />;
     case 'tradingClasses':
