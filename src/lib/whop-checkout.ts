@@ -1,4 +1,10 @@
+import * as WebBrowser from 'expo-web-browser';
+
 import { apiRequest } from '@/lib/api/client';
+
+const APP_RETURN_URL = 'jmjtradingapp://payment/return';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export type WhopPaymentStatus = {
   id: string;
@@ -9,6 +15,13 @@ export type WhopPaymentStatus = {
 
 export function isHostedCheckout(mode: string | null | undefined) {
   return mode === 'bachs' || mode === 'whop';
+}
+
+export function openHostedCheckout(url: string) {
+  return WebBrowser.openAuthSessionAsync(url, APP_RETURN_URL, {
+    createTask: false,
+    showInRecents: false,
+  });
 }
 
 export async function waitForWhopPayment(paymentId: string) {

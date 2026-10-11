@@ -41,7 +41,8 @@ module.exports = {
       process.env.GOOGLE_SERVICES_JSON || './google-services.json',
     adaptiveIcon: {
       backgroundColor: '#F5C518',
-      foregroundImage: './assets/images/icon.png',
+      backgroundImage: './assets/images/android-icon-background.png',
+      foregroundImage: './assets/images/android-icon-foreground.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
     },
     predictiveBackGestureEnabled: false,

@@ -14,7 +14,7 @@ import {
 } from '@/constants/subscriptions-data';
 import type { SubscriptionPlanApi } from '@/lib/api/types';
 import { alertError, alertSuccess } from '@/lib/errors';
-import { isHostedCheckout, waitForWhopPayment } from '@/lib/whop-checkout';
+import { isHostedCheckout, openHostedCheckout, waitForWhopPayment } from '@/lib/whop-checkout';
 import {
   checkoutSubscription,
   fetchSubscriptionPlans,
@@ -74,7 +74,11 @@ export default function SignalsPlanScreen() {
           result.payment.mode === 'paystack') &&
         result.payment.authorizationUrl
       ) {
-        await WebBrowser.openBrowserAsync(result.payment.authorizationUrl);
+        if (isHostedCheckout(result.payment.mode)) {
+          await openHostedCheckout(result.payment.authorizationUrl);
+        } else {
+          await WebBrowser.openBrowserAsync(result.payment.authorizationUrl);
+        }
         if (isHostedCheckout(result.payment.mode)) {
           const status = await waitForWhopPayment(result.payment.reference);
           if (status.status !== 'PAID') {

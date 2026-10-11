@@ -1,4 +1,3 @@
-import * as WebBrowser from 'expo-web-browser';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useMemo, useState } from 'react';
@@ -16,7 +15,7 @@ import { cn } from '@/lib/cn';
 import { alertError, alertSuccess } from '@/lib/errors';
 import { fetchPool, joinPool } from '@/lib/pool';
 import { setPoolSubmitResult } from '@/lib/pool-draft';
-import { isHostedCheckout, waitForWhopPayment } from '@/lib/whop-checkout';
+import { isHostedCheckout, openHostedCheckout, waitForWhopPayment } from '@/lib/whop-checkout';
 
 function formatUsd(amount: number) {
   return new Intl.NumberFormat('en-US', {
@@ -94,7 +93,7 @@ export default function PoolPaymentScreen() {
       });
 
       if (isHostedCheckout(result.checkout?.mode) && result.checkout.url) {
-        await WebBrowser.openBrowserAsync(result.checkout.url);
+        await openHostedCheckout(result.checkout.url);
         const status = await waitForWhopPayment(result.checkout.paymentId);
         if (status.status !== 'PAID') {
           throw new Error(

@@ -1,4 +1,3 @@
-import * as WebBrowser from 'expo-web-browser';
 import { router, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
@@ -9,7 +8,7 @@ import { cn } from '@/lib/cn';
 import { alertError, alertSuccess } from '@/lib/errors';
 import { createInvestment } from '@/lib/invest';
 import { getInvestDraft, setInvestSubmitResult } from '@/lib/invest-draft';
-import { isHostedCheckout, waitForWhopPayment } from '@/lib/whop-checkout';
+import { isHostedCheckout, openHostedCheckout, waitForWhopPayment } from '@/lib/whop-checkout';
 
 function formatUsd(amount: number) {
   return new Intl.NumberFormat('en-US', {
@@ -41,7 +40,7 @@ export default function PaymentScreen() {
       });
 
       if (isHostedCheckout(result.checkout?.mode) && result.checkout.url) {
-        await WebBrowser.openBrowserAsync(result.checkout.url);
+        await openHostedCheckout(result.checkout.url);
         const status = await waitForWhopPayment(result.checkout.paymentId);
         if (status.status !== 'PAID') {
           throw new Error(
