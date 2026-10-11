@@ -14,7 +14,7 @@ import {
 } from '@/constants/subscriptions-data';
 import type { SubscriptionPlanApi } from '@/lib/api/types';
 import { alertError, alertSuccess } from '@/lib/errors';
-import { waitForWhopPayment } from '@/lib/whop-checkout';
+import { isHostedCheckout, waitForWhopPayment } from '@/lib/whop-checkout';
 import {
   checkoutSubscription,
   fetchSubscriptionPlans,
@@ -70,15 +70,16 @@ export default function SignalsPlanScreen() {
       const result = await checkoutSubscription(selectedPlan.id);
 
       if (
-        (result.payment.mode === 'whop' || result.payment.mode === 'paystack') &&
+        (isHostedCheckout(result.payment.mode) ||
+          result.payment.mode === 'paystack') &&
         result.payment.authorizationUrl
       ) {
         await WebBrowser.openBrowserAsync(result.payment.authorizationUrl);
-        if (result.payment.mode === 'whop') {
+        if (isHostedCheckout(result.payment.mode)) {
           const status = await waitForWhopPayment(result.payment.reference);
           if (status.status !== 'PAID') {
             throw new Error(
-              'Payment is not confirmed yet. If you completed checkout, the plan activates once Whop confirms it.',
+              'Payment is not confirmed yet. If you completed checkout, the plan activates once Bachs confirms it.',
             );
           }
         }

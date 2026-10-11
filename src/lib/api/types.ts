@@ -157,7 +157,7 @@ export type InvestOptionsResponse = {
 };
 
 export type WhopCheckoutApi = {
-  mode: 'mock' | 'whop';
+  mode: 'mock' | 'whop' | 'bachs';
   paymentId: string;
   url: string | null;
 };
@@ -290,7 +290,7 @@ export type SubscriptionApi = {
 export type CheckoutResponse = {
   message: string;
   payment: {
-    mode: 'mock' | 'paystack' | 'whop';
+    mode: 'mock' | 'paystack' | 'whop' | 'bachs';
     reference: string;
     authorizationUrl: string | null;
     accessCode: string | null;

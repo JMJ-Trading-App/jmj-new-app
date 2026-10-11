@@ -16,7 +16,7 @@ import { cn } from '@/lib/cn';
 import { alertError, alertSuccess } from '@/lib/errors';
 import { fetchPool, joinPool } from '@/lib/pool';
 import { setPoolSubmitResult } from '@/lib/pool-draft';
-import { waitForWhopPayment } from '@/lib/whop-checkout';
+import { isHostedCheckout, waitForWhopPayment } from '@/lib/whop-checkout';
 
 function formatUsd(amount: number) {
   return new Intl.NumberFormat('en-US', {
@@ -93,12 +93,12 @@ export default function PoolPaymentScreen() {
         serviceCharge: result.serviceCharge,
       });
 
-      if (result.checkout?.mode === 'whop' && result.checkout.url) {
+      if (isHostedCheckout(result.checkout?.mode) && result.checkout.url) {
         await WebBrowser.openBrowserAsync(result.checkout.url);
         const status = await waitForWhopPayment(result.checkout.paymentId);
         if (status.status !== 'PAID') {
           throw new Error(
-            'Payment is not confirmed yet. If you completed checkout, the pool join activates once Whop confirms it.',
+            'Payment is not confirmed yet. If you completed checkout, the pool join activates once Bachs confirms it.',
           );
         }
         alertSuccess('Payment received');
@@ -157,10 +157,10 @@ export default function PoolPaymentScreen() {
         showsVerticalScrollIndicator={false}>
         <View className="gap-2">
           <Text className="font-geist-bold text-[24px] leading-[30px] text-stone-title">
-            Pay with Whop
+            Pay with Bachs
           </Text>
           <Text className="font-geist text-[14px] leading-[20px] text-muted">
-            You will complete this contribution on Whop. Your place in {pool.name} stays pending
+            You will complete this contribution on Bachs. Your place in {pool.name} stays pending
             until the payment is confirmed.
           </Text>
         </View>

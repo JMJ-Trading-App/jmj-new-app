@@ -7,6 +7,10 @@ export type WhopPaymentStatus = {
   targetId: string;
 };
 
+export function isHostedCheckout(mode: string | null | undefined) {
+  return mode === 'bachs' || mode === 'whop';
+}
+
 export async function waitForWhopPayment(paymentId: string) {
   const deadline = Date.now() + 45_000;
   let latest: WhopPaymentStatus = {

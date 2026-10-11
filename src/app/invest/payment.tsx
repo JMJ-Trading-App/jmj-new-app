@@ -9,7 +9,7 @@ import { cn } from '@/lib/cn';
 import { alertError, alertSuccess } from '@/lib/errors';
 import { createInvestment } from '@/lib/invest';
 import { getInvestDraft, setInvestSubmitResult } from '@/lib/invest-draft';
-import { waitForWhopPayment } from '@/lib/whop-checkout';
+import { isHostedCheckout, waitForWhopPayment } from '@/lib/whop-checkout';
 
 function formatUsd(amount: number) {
   return new Intl.NumberFormat('en-US', {
@@ -40,12 +40,12 @@ export default function PaymentScreen() {
         serviceCharge: result.serviceCharge,
       });
 
-      if (result.checkout?.mode === 'whop' && result.checkout.url) {
+      if (isHostedCheckout(result.checkout?.mode) && result.checkout.url) {
         await WebBrowser.openBrowserAsync(result.checkout.url);
         const status = await waitForWhopPayment(result.checkout.paymentId);
         if (status.status !== 'PAID') {
           throw new Error(
-            'Payment is not confirmed yet. If you completed checkout, the investment activates once Whop confirms it.',
+            'Payment is not confirmed yet. If you completed checkout, the investment activates once Bachs confirms it.',
           );
         }
         alertSuccess('Payment received');
@@ -92,9 +92,9 @@ export default function PaymentScreen() {
         contentContainerClassName="gap-6 px-5 pb-6 pt-6"
         showsVerticalScrollIndicator={false}>
         <View className="gap-2">
-          <Text className="font-geist-bold text-[18px] text-stone-title">Pay with Whop</Text>
+          <Text className="font-geist-bold text-[18px] text-stone-title">Pay with Bachs</Text>
           <Text className="font-geist text-[14px] leading-[20px] text-muted">
-            You will complete this payment on Whop. The investment stays pending until the payment
+            You will complete this payment on Bachs. The investment stays pending until the payment
             is confirmed.
           </Text>
         </View>
