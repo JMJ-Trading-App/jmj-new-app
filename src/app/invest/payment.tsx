@@ -1,11 +1,13 @@
 import { router, type Href } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { InvestFlowShell } from '@/components/invest/invest-flow-shell';
-import { getDepositProjection } from '@/constants/invest-flow-data';
+import { getDepositProjection, SERVICE_CHARGE_RATE } from '@/constants/invest-flow-data';
 import { cn } from '@/lib/cn';
 import { alertError, alertSuccess } from '@/lib/errors';
+import { fetchFxRates } from '@/lib/fx';
+import { quoteCheckout, type FxRates } from '@/lib/fx-quote';
 import { createInvestment } from '@/lib/invest';
 import { getInvestDraft, setInvestSubmitResult } from '@/lib/invest-draft';
 import { isHostedCheckout, openHostedCheckout, waitForWhopPayment } from '@/lib/whop-checkout';
@@ -20,8 +22,16 @@ function formatUsd(amount: number) {
 export default function PaymentScreen() {
   const draft = getInvestDraft();
   const projection = getDepositProjection(draft.amountUsd);
+  const [rates, setRates] = useState<FxRates | null>(null);
   const [accepted, setAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const quoted = quoteCheckout(projection.deposit, SERVICE_CHARGE_RATE, rates);
+
+  useEffect(() => {
+    void fetchFxRates()
+      .then(setRates)
+      .catch(() => setRates(null));
+  }, []);
 
   async function handleSubmit() {
     if (submitting) return;
@@ -100,8 +110,9 @@ export default function PaymentScreen() {
 
         <View className="gap-3 rounded-[18px] bg-[#F7F7F5] p-4">
           <Row label="Deposit" value={formatUsd(projection.deposit)} />
-          <Row label="Service charge" value={formatUsd(projection.serviceCharge)} />
-          <Row label="Total" value={formatUsd(projection.totalToPay)} />
+          <Row label="Service charge" value={formatUsd(quoted.serviceCharge)} />
+          <Row label="Exchange fee" value={formatUsd(quoted.fxFee)} />
+          <Row label="Total" value={formatUsd(quoted.totalDue)} />
         </View>
       </ScrollView>
     </InvestFlowShell>

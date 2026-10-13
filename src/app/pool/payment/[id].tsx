@@ -8,11 +8,14 @@ import { Button } from '@/components/ui/button';
 import {
   getPoolJoinProjection,
   parsePoolSize,
+  POOL_SERVICE_CHARGE_RATE,
   type PoolItem,
 } from '@/constants/pool-data';
 import type { PoolItemApi } from '@/lib/api/types';
 import { cn } from '@/lib/cn';
 import { alertError, alertSuccess } from '@/lib/errors';
+import { fetchFxRates } from '@/lib/fx';
+import { quoteCheckout, type FxRates } from '@/lib/fx-quote';
 import { fetchPool, joinPool } from '@/lib/pool';
 import { setPoolSubmitResult } from '@/lib/pool-draft';
 import { isHostedCheckout, openHostedCheckout, waitForWhopPayment } from '@/lib/whop-checkout';
@@ -59,6 +62,7 @@ export default function PoolPaymentScreen() {
   const [pool, setPool] = useState<PoolItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [rates, setRates] = useState<FxRates | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -74,10 +78,21 @@ export default function PoolPaymentScreen() {
     })();
   }, [id]);
 
+  useEffect(() => {
+    void fetchFxRates()
+      .then(setRates)
+      .catch(() => setRates(null));
+  }, []);
+
   const projection = useMemo(() => {
     if (!pool) return null;
     return getPoolJoinProjection(pool.minContributionValue, parsePoolSize(pool.poolSize));
   }, [pool]);
+  const quoted = quoteCheckout(
+    projection?.contribution ?? 0,
+    POOL_SERVICE_CHARGE_RATE,
+    rates,
+  );
 
   async function handleSubmit() {
     if (submitting || !pool) return;
@@ -166,8 +181,9 @@ export default function PoolPaymentScreen() {
 
         <View className="gap-3 rounded-[18px] bg-[#F7F7F5] p-4">
           <Row label="Contribution" value={formatUsd(projection.contribution)} />
-          <Row label="Service charge" value={formatUsd(projection.serviceCharge)} />
-          <Row label="Total" value={formatUsd(projection.totalToPay)} />
+          <Row label="Service charge" value={formatUsd(quoted.serviceCharge)} />
+          <Row label="Exchange fee" value={formatUsd(quoted.fxFee)} />
+          <Row label="Total" value={formatUsd(quoted.totalDue)} />
         </View>
       </ScrollView>
 
