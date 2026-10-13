@@ -26,10 +26,19 @@ export function PayoutSelectField({
         className="flex-row items-center justify-between rounded-[14px] bg-[#F3F4F6] px-4 py-[16px]"
         style={({ pressed }) => [pressed && { opacity: 0.92 }]}>
         <Text
-          className={cn('font-geist text-[15px]', value ? 'text-stone-title' : 'text-[#9CA3AF]')}>
+          numberOfLines={1}
+          className={cn(
+            'min-w-0 flex-1 font-geist text-[15px]',
+            value ? 'text-stone-title' : 'text-[#9CA3AF]',
+          )}>
           {value ?? placeholder}
         </Text>
-        <SymbolView name="chevron.down" size={16} tintColor="#9CA3AF" weight="medium" />
+        <SymbolView
+          name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }}
+          size={18}
+          tintColor="#9CA3AF"
+          weight="medium"
+        />
       </Pressable>
     </View>
   );

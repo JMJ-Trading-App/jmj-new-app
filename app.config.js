@@ -11,7 +11,7 @@ const env = {
 module.exports = {
   name: env.appName,
   slug: env.appSlug,
-  version: '1.2.6',
+  version: '1.2.7',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: env.scheme,
@@ -34,7 +34,7 @@ module.exports = {
 
   android: {
     package: env.androidPackage,
-    versionCode: 9,
+    versionCode: 10,
     // Local Nest API over HTTP (LAN / emulator). Prefer HTTPS in store builds.
     usesCleartextTraffic: true,
     googleServicesFile:
