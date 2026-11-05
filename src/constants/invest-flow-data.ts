@@ -65,9 +65,12 @@ export const PAYOUT_ACCOUNTS: PayoutAccount[] = [
   },
 ];
 
-export const DEPOSIT_PRESETS = [2000, 2500, 5000, 10000] as const;
+/** Presets stay under Bachs ~$5k checkout cap after the 2.5% service charge. */
+export const DEPOSIT_PRESETS = [2000, 2500, 4000, 4500] as const;
 export const MIN_DEPOSIT = 2000;
-export const DEFAULT_DEPOSIT = 5000;
+export const DEFAULT_DEPOSIT = 4000;
+/** Online card checkout max (deposit + fees). */
+export const BACHS_MAX_CHECKOUT_USD = 5000;
 export const PROFIT_TARGET_RATE = 1.5; // 150%
 export const USER_PROFIT_SHARE = 0.55; // 55%
 export const SERVICE_CHARGE_RATE = 0.025; // 2.5%

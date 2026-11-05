@@ -3,7 +3,11 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { InvestFlowShell } from '@/components/invest/invest-flow-shell';
-import { getDepositProjection, SERVICE_CHARGE_RATE } from '@/constants/invest-flow-data';
+import {
+  BACHS_MAX_CHECKOUT_USD,
+  getDepositProjection,
+  SERVICE_CHARGE_RATE,
+} from '@/constants/invest-flow-data';
 import { cn } from '@/lib/cn';
 import { alertError, alertSuccess } from '@/lib/errors';
 import { fetchFxRates } from '@/lib/fx';
@@ -26,6 +30,7 @@ export default function PaymentScreen() {
   const [accepted, setAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const quoted = quoteCheckout(projection.deposit, SERVICE_CHARGE_RATE, rates);
+  const overCheckoutLimit = quoted.totalDue > BACHS_MAX_CHECKOUT_USD;
 
   useEffect(() => {
     void fetchFxRates()
@@ -34,7 +39,7 @@ export default function PaymentScreen() {
   }, []);
 
   async function handleSubmit() {
-    if (submitting) return;
+    if (submitting || overCheckoutLimit) return;
     setSubmitting(true);
 
     try {
@@ -75,7 +80,7 @@ export default function PaymentScreen() {
       title="Payment"
       step={4}
       nextLabel={submitting ? 'Opening checkout…' : 'Pay'}
-      nextDisabled={!accepted || submitting}
+      nextDisabled={!accepted || submitting || overCheckoutLimit}
       onNext={() => void handleSubmit()}
       footerExtra={
         <Pressable
@@ -114,6 +119,14 @@ export default function PaymentScreen() {
           <Row label="Exchange fee" value={formatUsd(quoted.fxFee)} />
           <Row label="Total" value={formatUsd(quoted.totalDue)} />
         </View>
+
+        {overCheckoutLimit ? (
+          <Text className="font-geist text-[13px] leading-[18px] text-[#B91C1C]">
+            Online checkout is limited to {formatUsd(BACHS_MAX_CHECKOUT_USD)} including fees. Lower
+            your deposit (about {formatUsd(BACHS_MAX_CHECKOUT_USD / (1 + SERVICE_CHARGE_RATE))} or
+            less before fees) and try again.
+          </Text>
+        ) : null}
       </ScrollView>
     </InvestFlowShell>
   );
