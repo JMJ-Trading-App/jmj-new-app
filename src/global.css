@@ -12,3 +12,18 @@
   --font-rounded: Geist, ui-sans-serif, system-ui, sans-serif;
   --font-serif: Geist, ui-sans-serif, system-ui, sans-serif;
 }
+
+/* Mobile web: keep the phone UI from stretching / spilling sideways. */
+@media (min-width: 481px) {
+  html,
+  body {
+    background: #f7f7f5;
+  }
+
+  #root {
+    max-width: 430px;
+    margin-left: auto;
+    margin-right: auto;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
+  }
+}

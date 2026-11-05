@@ -437,15 +437,13 @@ function JoinablePoolDetail({
         </View>
 
         <View className="rounded-[20px] bg-[#F8F1E3] p-4">
-          <View className="flex-row">
+          <View className="flex-row flex-wrap gap-y-4">
             <StatCell label="Pool Size" value={pool.poolSize} />
             <StatCell
               label="Investors Joined"
               value={`${pool.contributorsJoined} of ${pool.contributorsNeeded}`}
             />
             <StatCell label="Duration" value={pool.duration} />
-          </View>
-          <View className="mt-4 flex-row">
             <StatCell label="Contribution" value={pool.minContribution} />
             <StatCell label="Investors Needed" value={`${pool.contributorsNeeded}`} />
             <StatCell label="Returns" value={pool.returns} valueClassName="text-[#C4A015]" />
@@ -559,9 +557,13 @@ function StatCell({
   valueClassName?: string;
 }) {
   return (
-    <View className="flex-1 gap-1">
-      <Text className="font-geist text-[11px] text-muted">{label}</Text>
-      <Text className={cn('font-geist-bold text-[15px] text-stone-title', valueClassName)}>
+    <View className="min-w-[30%] flex-1 gap-1 pr-2">
+      <Text className="font-geist text-[11px] text-muted" numberOfLines={1}>
+        {label}
+      </Text>
+      <Text
+        numberOfLines={2}
+        className={cn('font-geist-bold text-[15px] text-stone-title', valueClassName)}>
         {value}
       </Text>
     </View>

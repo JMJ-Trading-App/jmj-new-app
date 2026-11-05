@@ -12,14 +12,14 @@ type PinInputProps = {
 
 export function PinInput({ length = PIN_LENGTH, value, className }: PinInputProps) {
   return (
-    <View className={cn('flex-row justify-center gap-4', className)}>
+    <View className={cn('w-full max-w-[320px] self-center flex-row justify-center gap-3', className)}>
       {Array.from({ length }).map((_, index) => {
         const filled = index < value.length;
 
         return (
           <View
             key={index}
-            className="w-[60px] h-[60px] rounded-xl border border-border bg-input items-center justify-center">
+            className="h-14 max-w-[64px] flex-1 aspect-square rounded-xl border border-border bg-input items-center justify-center">
             {filled ? <View className="w-3 h-3 rounded-full bg-foreground" /> : null}
           </View>
         );

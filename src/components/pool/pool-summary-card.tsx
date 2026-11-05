@@ -21,7 +21,11 @@ export function PoolSummaryCard({ summary }: PoolSummaryCardProps) {
       <Text className="font-geist text-[13px] text-muted">Total Pool Contributions</Text>
 
       <View className="mt-2 flex-row items-end">
-        <Text className="font-geist-bold text-[36px] leading-[42px] text-stone-title">
+        <Text
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
+          className="font-geist-bold text-[32px] leading-[38px] text-stone-title">
           {summary.totalWhole}
         </Text>
         <Text className="mb-1 font-geist-bold text-[28px] leading-[34px] text-[#A8A29E]">

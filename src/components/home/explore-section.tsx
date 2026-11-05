@@ -32,14 +32,20 @@ export function ExploreSection({ onItemPress }: ExploreSectionProps) {
             key={item.id}
             accessibilityRole="button"
             onPress={() => onItemPress?.(item.id)}
-            className="min-h-[168px] flex-1 justify-between rounded-[20px] bg-explore-card p-4">
+            className="min-h-[168px] min-w-0 flex-1 justify-between rounded-[20px] bg-explore-card p-3.5">
             <View className="h-10 w-10 items-center justify-center rounded-xl bg-stone-title">
               <item.Icon />
             </View>
 
             <View className="mt-6 gap-1.5">
-              <Text className="font-geist-semibold text-[15px] text-stone-title">{item.title}</Text>
-              <Text className="font-geist text-[12px] leading-[16px] text-stone-body">
+              <Text
+                numberOfLines={1}
+                className="font-geist-semibold text-[15px] text-stone-title">
+                {item.title}
+              </Text>
+              <Text
+                numberOfLines={3}
+                className="font-geist text-[12px] leading-[16px] text-stone-body">
                 {item.description}
               </Text>
             </View>

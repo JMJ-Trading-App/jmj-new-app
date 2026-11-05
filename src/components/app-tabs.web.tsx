@@ -36,10 +36,10 @@ export default function AppTabs() {
 
       <View
         pointerEvents="box-none"
-        className="absolute bottom-0 left-0 right-0 items-center px-5"
+        className="absolute bottom-0 left-0 right-0 items-center px-3"
         style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
         <View
-          className="w-full max-w-[400px] flex-row items-center justify-between rounded-full border border-[#EFEFEF] bg-white px-2 py-1.5"
+          className="w-full max-w-[400px] flex-row items-center justify-between rounded-full border border-[#EFEFEF] bg-white px-1.5 py-1.5"
           style={{
             shadowColor: '#000000',
             shadowOffset: { width: 0, height: 8 },
@@ -78,13 +78,14 @@ function WebTabButton({ isFocused, Icon, label, ...props }: WebTabButtonProps) {
     <Pressable
       {...props}
       className={cn(
-        'min-w-[72px] flex-1 items-center justify-center rounded-full px-3 py-2',
+        'min-w-0 flex-1 items-center justify-center rounded-full px-1.5 py-2',
         isFocused && 'bg-tab-active',
       )}>
       <Icon color={color} size={22} />
       <Text
+        numberOfLines={1}
         className={cn(
-          'mt-1 font-geist-medium text-[11px] leading-[14px]',
+          'mt-1 font-geist-medium text-[10px] leading-[13px]',
           isFocused ? 'text-stone-title' : 'text-btn-disabled',
         )}>
         {label}

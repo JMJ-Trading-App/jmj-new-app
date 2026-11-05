@@ -86,8 +86,12 @@ export function AccountBalanceCarousel({ accounts }: AccountBalanceCarouselProps
               style={{ paddingHorizontal: 20, paddingVertical: 20, minHeight: 168 }}>
               <Text className="font-geist text-[13px] text-[#9CA3AF]">{account.label}</Text>
 
-              <View className="mt-3 flex-row items-center gap-3">
-                <Text className="font-geist-bold text-[36px] leading-[42px] text-white">
+              <View className="mt-3 min-w-0 flex-row items-center gap-3">
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.7}
+                  className="min-w-0 flex-1 font-geist-bold text-[32px] leading-[38px] text-white">
                   {hidden ? '••••••' : account.balance}
                 </Text>
                   <Pressable

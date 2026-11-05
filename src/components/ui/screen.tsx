@@ -59,12 +59,12 @@ export function Screen({
         </View>
       )}
 
-      <View className={cn('flex-1 px-6', className)} style={style} {...rest}>
+      <View className={cn('flex-1 px-5', className)} style={style} {...rest}>
         {children}
       </View>
 
       {footer ? (
-        <View className="px-6" style={{ paddingBottom: Math.max(insets.bottom, 24) }}>
+        <View className="px-5" style={{ paddingBottom: Math.max(insets.bottom, 24) }}>
           {footer}
         </View>
       ) : null}

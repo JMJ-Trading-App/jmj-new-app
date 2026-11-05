@@ -3,10 +3,10 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
   FlatList,
   Pressable,
   Text,
+  useWindowDimensions,
   View,
   type LayoutChangeEvent,
   type NativeScrollEvent,
@@ -22,11 +22,11 @@ import { fetchMe } from '@/lib/auth';
 import { hasLocalPin, isUnlocked, markUnlocked } from '@/lib/lock';
 import { getCachedUser, hasValidSession, hydrateSession } from '@/lib/session';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const AUTO_SLIDE_MS = 2000;
 
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
   const [bootstrapping, setBootstrapping] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const [carouselHeight, setCarouselHeight] = useState(0);
@@ -83,7 +83,7 @@ export default function WelcomeScreen() {
     const timer = setInterval(() => {
       const nextIndex = (activeIndexRef.current + 1) % WELCOME_SLIDES.length;
       listRef.current?.scrollToOffset({
-        offset: nextIndex * SCREEN_WIDTH,
+        offset: nextIndex * screenWidth,
         animated: true,
       });
       activeIndexRef.current = nextIndex;
@@ -91,7 +91,7 @@ export default function WelcomeScreen() {
     }, AUTO_SLIDE_MS);
 
     return () => clearInterval(timer);
-  }, [bootstrapping, carouselHeight, activeIndex]);
+  }, [bootstrapping, carouselHeight, activeIndex, screenWidth]);
 
   function handleScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
     const index = Math.round(
@@ -135,8 +135,8 @@ export default function WelcomeScreen() {
             className="flex-1"
             data={WELCOME_SLIDES}
             getItemLayout={(_, index) => ({
-              length: SCREEN_WIDTH,
-              offset: SCREEN_WIDTH * index,
+              length: screenWidth,
+              offset: screenWidth * index,
               index,
             })}
             horizontal
@@ -147,6 +147,7 @@ export default function WelcomeScreen() {
                 height={carouselHeight}
                 slide={item}
                 topInset={insets.top}
+                width={screenWidth}
               />
             )}
             showsHorizontalScrollIndicator={false}

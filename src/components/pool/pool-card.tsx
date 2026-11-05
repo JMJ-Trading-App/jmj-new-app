@@ -99,8 +99,8 @@ export function PoolCard({ pool, onPress, onActionPress }: PoolCardProps) {
           </View>
         </View>
       ) : (
-        <View className="mt-4 flex-row items-end justify-between gap-3">
-          <View className="min-w-0 flex-1 flex-row gap-4">
+        <View className="mt-4 flex-row flex-wrap items-end justify-between gap-3">
+          <View className="min-w-0 flex-1 flex-row flex-wrap gap-x-4 gap-y-2">
             <View className="gap-0.5">
               <Text className="font-geist text-[11px] text-muted">Duration</Text>
               <Text className="font-geist-semibold text-[13px] text-stone-title">{pool.duration}</Text>

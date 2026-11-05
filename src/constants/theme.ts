@@ -28,4 +28,5 @@ export type ThemeColor =
 
 export const BottomTabInset = 96;
 
-export const MaxContentWidth = 800;
+/** Phone-frame cap for web so layouts match mobile. */
+export const MaxContentWidth = 430;
