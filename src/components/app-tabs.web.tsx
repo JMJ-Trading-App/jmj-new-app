@@ -36,8 +36,14 @@ export default function AppTabs() {
 
       <View
         pointerEvents="box-none"
-        className="absolute bottom-0 left-0 right-0 items-center px-3"
-        style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
+        className="left-0 right-0 items-center px-3"
+        style={{
+          // Fixed to the viewport on web — absolute sticks to the tall content box and scrolls away.
+          position: 'fixed',
+          bottom: 0,
+          zIndex: 100,
+          paddingBottom: Math.max(insets.bottom, 12),
+        }}>
         <View
           className="w-full max-w-[400px] flex-row items-center justify-between rounded-full border border-[#EFEFEF] bg-white px-1.5 py-1.5"
           style={{
