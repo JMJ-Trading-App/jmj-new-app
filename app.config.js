@@ -34,7 +34,7 @@ module.exports = {
 
   android: {
     package: env.androidPackage,
-    versionCode: 10,
+    // versionCode comes from EAS remote + production autoIncrement.
     // Local Nest API over HTTP (LAN / emulator). Prefer HTTPS in store builds.
     usesCleartextTraffic: true,
     googleServicesFile:
